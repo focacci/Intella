@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/*
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Database (SQLite — single-user, kept out of VCS)
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+prisma/*.db
+prisma/migrations/dev.db*
+
+# Generated API clients (regenerated from openapi.yaml)
+# packages/shared/src/generated/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Caches & test output
+.cache/
+.vite/
+coverage/
+.vitest/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# iOS / Xcode / Swift
+ios/**/build/
+ios/**/DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+.swiftpm/
+ios/**/.build/
+Pods/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.pm2/
+*.pid
