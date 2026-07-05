@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild -version)",
+      "Bash(xcrun simctl *)",
+      "Bash(swift --version)",
+      "Bash(cat)",
+      "Bash(swift /tmp/pix.swift)"
+    ]
+  }
+}
