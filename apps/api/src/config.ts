@@ -48,11 +48,14 @@ const nullableDateTimeEnv = z.preprocess(
   z.string().datetime({ offset: true }).nullable()
 );
 
+/** The insecure default bootstrap token — fine for dev, refused in production. */
+export const DEFAULT_DEV_TOKEN = "dev-token";
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_HOST: z.string().min(1).default("127.0.0.1"),
   API_PORT: z.coerce.number().int().positive().max(65535).default(8787),
-  INTELLA_AUTH_TOKEN: z.string().min(1).default("dev-token"),
+  INTELLA_AUTH_TOKEN: z.string().min(1).default(DEFAULT_DEV_TOKEN),
   INTELLA_FORCE_LOCAL: booleanEnv.default(false),
   INTELLA_FORCE_RULES: booleanEnv.default(false),
   INTELLA_LLM_UP: booleanEnv.default(true),
@@ -76,7 +79,29 @@ const envSchema = z.object({
 
 export type ApiConfig = z.infer<typeof envSchema>;
 
-export const config: ApiConfig = envSchema.parse(process.env);
+/**
+ * Parse + validate the environment into an `ApiConfig`. Beyond Zod validation
+ * this enforces one production safety rule: the bootstrap `INTELLA_AUTH_TOKEN`
+ * may not be left at its insecure default when `NODE_ENV=production`. A missing
+ * token silently defaults to "dev-token", so without this guard a forgotten
+ * token would ship a production API protected only by a well-known string
+ * (Tailscale + device tokens are the real defense, but this closes the footgun).
+ */
+export function parseApiConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
+  const parsed = envSchema.parse(env);
+
+  if (parsed.NODE_ENV === "production" && parsed.INTELLA_AUTH_TOKEN === DEFAULT_DEV_TOKEN) {
+    throw new Error(
+      `INTELLA_AUTH_TOKEN is still the default "${DEFAULT_DEV_TOKEN}" while ` +
+        `NODE_ENV=production. Set a strong, unique bootstrap token before starting ` +
+        `Intella in production.`
+    );
+  }
+
+  return parsed;
+}
+
+export const config: ApiConfig = parseApiConfig();
 
 /**
  * The base URL a device dials to reach this API. Prefer the explicitly

@@ -54,7 +54,9 @@ export function buildServer(options: BuildServerOptions = {}) {
   app.get("/health", async () => healthResponseSchema.parse(HEALTH_OK));
 
   app.get("/system/status", async () =>
-    systemStatusSchema.parse(buildSystemStatus(apiConfig, options.systemStatus))
+    systemStatusSchema.parse(
+      await buildSystemStatus(prisma, apiConfig, options.systemStatus)
+    )
   );
 
   app.get("/profile", async () =>
@@ -100,6 +102,18 @@ export function buildServer(options: BuildServerOptions = {}) {
     return reply.code(204).send();
   });
 
+  // Sync stubs (the engine lands in Phase 6). Documented in openapi.yaml; these
+  // honor the contract with an explicit 501 so a generated-client call gets a
+  // clear "recognized, not yet implemented" instead of a bare 404. Auth still
+  // applies — an unauthenticated call 401s before reaching here.
+  app.post("/sync/push", async (_request, reply) =>
+    sendNotImplemented(reply, "sync/push")
+  );
+
+  app.get("/sync/pull", async (_request, reply) =>
+    sendNotImplemented(reply, "sync/pull")
+  );
+
   // Unauthenticated (the device has no token yet); gated by an open pairing
   // window + PIN (T0.12 · R22). The auth hook exempts this path.
   app.get("/pair", async (request, reply) => {
@@ -129,6 +143,13 @@ function sendPairForbidden(reply: FastifyReply) {
   return reply.code(403).send({
     code: "pairing_closed",
     message: "No open pairing window, or invalid/expired PIN"
+  });
+}
+
+function sendNotImplemented(reply: FastifyReply, feature: string) {
+  return reply.code(501).send({
+    code: "not_implemented",
+    message: `${feature} lands with the Phase 6 sync engine`
   });
 }
 

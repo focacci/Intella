@@ -42,6 +42,43 @@ describe("GET /system/status", () => {
     }
   });
 
+  it("surfaces the newest successful backup time from the database", async () => {
+    const database = await createTestDatabase();
+    const finishedAt = new Date("2026-07-05T03:00:00.000Z");
+    await database.prisma.backupRun.create({
+      data: {
+        status: "success",
+        startedAt: new Date("2026-07-05T02:59:00.000Z"),
+        finishedAt
+      }
+    });
+    // A later FAILED run must not be reported as the last good backup.
+    await database.prisma.backupRun.create({
+      data: { status: "failed", startedAt: new Date("2026-07-05T04:00:00.000Z") }
+    });
+
+    const app = buildServer({
+      authToken: "test-token",
+      logger: false,
+      prisma: database.prisma
+    });
+
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/system/status",
+        headers: { authorization: "Bearer test-token" }
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({
+        lastBackupAt: finishedAt.toISOString()
+      });
+    } finally {
+      await closeAppAndDatabase(app, database);
+    }
+  });
+
   it("reflects forced-local and forced-rules toggles", async () => {
     const localDatabase = await createTestDatabase();
     const localApp = buildServer({

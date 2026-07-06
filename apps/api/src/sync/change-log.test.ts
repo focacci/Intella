@@ -76,6 +76,58 @@ describe("ChangeLog / serverSeq (T0.11)", () => {
     }
   });
 
+  it("bumps the sync-quartet version on each update, leaving creates at 0", async () => {
+    const database = await createTestDatabase();
+    const { prisma } = database;
+
+    try {
+      // Create starts at the schema default.
+      const profile = await prisma.profile.create({ data: {} });
+      expect(profile.version).toBe(0);
+
+      // Each update advances the optimistic-concurrency counter (R3).
+      const afterFirst = await prisma.profile.update({
+        where: { id: profile.id },
+        data: { weightKg: 80 }
+      });
+      expect(afterFirst.version).toBe(1);
+
+      const afterSecond = await prisma.profile.update({
+        where: { id: profile.id },
+        data: { weightKg: 81 }
+      });
+      expect(afterSecond.version).toBe(2);
+
+      // updateMany bumps too.
+      await prisma.profile.updateMany({
+        where: { id: profile.id },
+        data: { weightKg: 82 }
+      });
+      const reread = await prisma.profile.findUniqueOrThrow({ where: { id: profile.id } });
+      expect(reread.version).toBe(3);
+    } finally {
+      await database.cleanup();
+    }
+  });
+
+  it("respects an explicitly supplied version instead of bumping", async () => {
+    const database = await createTestDatabase();
+    const { prisma } = database;
+
+    try {
+      const profile = await prisma.profile.create({ data: {} });
+      // A caller that sets version directly (e.g. a sync-apply replaying an
+      // authoritative value) is left untouched — no double-write.
+      const updated = await prisma.profile.update({
+        where: { id: profile.id },
+        data: { weightKg: 90, version: 42 }
+      });
+      expect(updated.version).toBe(42);
+    } finally {
+      await database.cleanup();
+    }
+  });
+
   it("does not log writes to local-only (non-syncable) tables", async () => {
     const database = await createTestDatabase();
     const { prisma } = database;

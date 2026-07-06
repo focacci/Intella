@@ -1041,6 +1041,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized"];
+                501: components["responses"]["NotImplemented"];
             };
         };
         delete?: never;
@@ -1093,6 +1094,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized"];
+                501: components["responses"]["NotImplemented"];
             };
         };
         put?: never;
@@ -1659,6 +1661,15 @@ export interface components {
         };
         /** @description Request failed Zod validation */
         ValidationError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Endpoint recognized but not yet implemented (stub — lands with its phase) */
+        NotImplemented: {
             headers: {
                 [name: string]: unknown;
             };
