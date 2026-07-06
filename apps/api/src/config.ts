@@ -29,6 +29,14 @@ const booleanEnv = z.preprocess((value) => {
   }
 }, z.boolean());
 
+// Optional string env var where an empty value means "not set". Env files (and
+// our shipped .env.example) carry these as "" placeholders; treat "" as absent
+// so an unconfigured optional stays undefined rather than failing `.min(1)`.
+const optionalStringEnv = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().min(1).optional()
+);
+
 const nullableDateTimeEnv = z.preprocess(
   (value) => {
     if (value === undefined || value === "") {
@@ -54,14 +62,14 @@ const envSchema = z.object({
   INTELLA_LLM_SPEND_MTD: z.coerce.number().nonnegative().default(0),
   INTELLA_LLM_MONTHLY_CEILING: z.coerce.number().nonnegative().default(10),
   // Backups (T0.7 / R21)
-  INTELLA_BACKUP_DIR: z.string().min(1).optional(),
-  INTELLA_BACKUP_KEY: z.string().min(1).optional(), // base64 32-byte key; else a keyfile is used
-  INTELLA_BACKUP_OFFSITE: z.string().min(1).optional(), // presence signals a configured replication target
+  INTELLA_BACKUP_DIR: optionalStringEnv,
+  INTELLA_BACKUP_KEY: optionalStringEnv, // base64 32-byte key; else a keyfile is used
+  INTELLA_BACKUP_OFFSITE: optionalStringEnv, // presence signals a configured replication target
   INTELLA_BACKUP_ENABLED: booleanEnv.default(false), // start the in-process nightly scheduler
   INTELLA_BACKUP_HOUR: z.coerce.number().int().min(0).max(23).default(3),
   // Device pairing (T0.12 / R22). PUBLIC_BASE_URL is the address the phone dials
   // (the Tailscale Serve HTTPS name in production); it is embedded in the QR.
-  INTELLA_PUBLIC_BASE_URL: z.string().min(1).optional(),
+  INTELLA_PUBLIC_BASE_URL: optionalStringEnv,
   INTELLA_PAIRING_TTL_MINUTES: z.coerce.number().int().positive().max(1440).default(10),
   INTELLA_PAIRING_DEVICE_NAME: z.string().min(1).default("Paired device")
 });
