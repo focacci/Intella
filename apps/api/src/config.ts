@@ -74,7 +74,20 @@ const envSchema = z.object({
   // (the Tailscale Serve HTTPS name in production); it is embedded in the QR.
   INTELLA_PUBLIC_BASE_URL: optionalStringEnv,
   INTELLA_PAIRING_TTL_MINUTES: z.coerce.number().int().positive().max(1440).default(10),
-  INTELLA_PAIRING_DEVICE_NAME: z.string().min(1).default("Paired device")
+  INTELLA_PAIRING_DEVICE_NAME: z.string().min(1).default("Paired device"),
+  // Remote access over Tailscale (T0.6 / T0.13). On app start we probe the local
+  // tailscaled and, if it is up, run `tailscale serve` so the phone/iPad can
+  // reach the app over the tailnet; if Tailscale is down we warn and continue
+  // (local browser use is unaffected). SERVE toggles the whole step. SERVE_PORT
+  // is the local port Serve fronts — 5173 (the web app, which proxies /api →
+  // the API) so a phone browser loads the real UI; set 8787 to front the API.
+  INTELLA_TAILSCALE_SERVE: booleanEnv.default(true),
+  INTELLA_TAILSCALE_SERVE_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(65535)
+    .default(5173)
 });
 
 export type ApiConfig = z.infer<typeof envSchema>;
@@ -90,7 +103,10 @@ export type ApiConfig = z.infer<typeof envSchema>;
 export function parseApiConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   const parsed = envSchema.parse(env);
 
-  if (parsed.NODE_ENV === "production" && parsed.INTELLA_AUTH_TOKEN === DEFAULT_DEV_TOKEN) {
+  if (
+    parsed.NODE_ENV === "production" &&
+    parsed.INTELLA_AUTH_TOKEN === DEFAULT_DEV_TOKEN
+  ) {
     throw new Error(
       `INTELLA_AUTH_TOKEN is still the default "${DEFAULT_DEV_TOKEN}" while ` +
         `NODE_ENV=production. Set a strong, unique bootstrap token before starting ` +

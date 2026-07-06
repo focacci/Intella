@@ -35,3 +35,24 @@ describe("parseApiConfig — production token guard", () => {
     );
   });
 });
+
+describe("parseApiConfig — Tailscale serve settings", () => {
+  it("defaults to serving the web app port over Tailscale", () => {
+    const cfg = parseApiConfig({});
+    expect(cfg.INTELLA_TAILSCALE_SERVE).toBe(true);
+    expect(cfg.INTELLA_TAILSCALE_SERVE_PORT).toBe(5173);
+  });
+
+  it("can be disabled and re-pointed at the API port", () => {
+    const cfg = parseApiConfig({
+      INTELLA_TAILSCALE_SERVE: "false",
+      INTELLA_TAILSCALE_SERVE_PORT: "8787"
+    });
+    expect(cfg.INTELLA_TAILSCALE_SERVE).toBe(false);
+    expect(cfg.INTELLA_TAILSCALE_SERVE_PORT).toBe(8787);
+  });
+
+  it("rejects an out-of-range serve port", () => {
+    expect(() => parseApiConfig({ INTELLA_TAILSCALE_SERVE_PORT: "70000" })).toThrow();
+  });
+});

@@ -5,7 +5,9 @@
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,magenta \"pnpm --filter @intella/api dev\" \"pnpm --filter @intella/web dev\"",
+    "dev": "pnpm tailscale:serve; concurrently -n api,web -c blue,magenta \"pnpm --filter @intella/api dev\" \"pnpm --filter @intella/web dev\"",
+    "tailscale:serve": "node --import tsx apps/api/src/ops/tailscale-serve.ts",
+    "tailscale:serve:off": "tailscale serve reset",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm --filter @intella/shared build && pnpm exec tsc -p tsconfig.scripts.json --noEmit && pnpm --filter @intella/eval typecheck && pnpm --filter @intella/api typecheck && pnpm --filter @intella/web typecheck",
     "test": "pnpm -r --if-present test",
