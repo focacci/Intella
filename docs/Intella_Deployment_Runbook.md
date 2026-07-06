@@ -17,7 +17,9 @@
 
 1. Install **Docker** (Docker Desktop on macOS/Windows, or Docker Engine on Linux).
 2. Install **Tailscale** on the desktop **and** the iPhone, and sign both into the **same tailnet**.
-3. In the Tailscale admin console, enable **MagicDNS** and turn on **device approval** (so nothing joins the tailnet silently — v0.5 §7.2).
+3. In the Tailscale admin console, enable **MagicDNS**, **HTTPS certificates**, and **Tailscale Serve**, and turn on **device approval** (so nothing joins the tailnet silently — v0.5 §7.2).
+
+   > **Serve must be enabled on the tailnet** or `tailscale serve` will hang waiting for the capability. If Serve is off, the first startup prints the exact one-click enable link (`https://login.tailscale.com/f/serve?node=…`); open it once, approve, and you're set.
 
 Find your desktop's stable tailnet name (MagicDNS):
 
@@ -83,7 +85,9 @@ docker compose run --rm setup pnpm setup:pair    # opens a new window, prints a 
 
 ## 4. HTTPS over Tailscale Serve (T0.13)
 
-The container publishes **only** to `127.0.0.1:8787`. Put Tailscale Serve in front of it to get a real HTTPS certificate at your tailnet name — run this **on the host**:
+**Local dev (`pnpm dev`) does this for you.** On startup a best-effort preflight probes the local `tailscaled` and, if it's up, runs `tailscale serve` for the app so your phone/iPad can reach it over the tailnet. If Tailscale is down (or Serve isn't enabled) it logs a warning and continues — the app is still usable in a local browser. It fronts the **web app** port by default (`INTELLA_TAILSCALE_SERVE_PORT=5173`, which proxies `/api` → the API); set it to `8787` to front the API directly, or set `INTELLA_TAILSCALE_SERVE=false` to skip it. Run it on demand with `pnpm tailscale:serve`; undo with `pnpm tailscale:serve:off`.
+
+**Docker / production host.** The container publishes **only** to `127.0.0.1:8787`; run Serve **on the host** to get a real HTTPS certificate at your tailnet name:
 
 ```bash
 # Proxy tailnet HTTPS (443) → the loopback-published API. Persistent across reboots.
@@ -128,6 +132,7 @@ Because the nightly encrypted snapshot (T0.7 / R21) carries all history, recover
 
 | Symptom | Fix |
 |---|---|
+| Startup warns "Serve is not enabled on your tailnet" | Open the printed `login.tailscale.com/.../serve` link once and enable Serve/HTTPS for the tailnet, then restart. Local browser use is unaffected meanwhile. |
 | `/pair` always 403 | No open window (expired or consumed). Re-run `docker compose run --rm setup pnpm setup:pair`. |
 | QR points at `http://localhost:8787` | `INTELLA_PUBLIC_BASE_URL` is unset. Set it to your tailnet HTTPS name and re-run setup. |
 | Phone can't reach the API | Confirm both devices are on the tailnet (`tailscale status`), MagicDNS is on, and `tailscale serve status` shows the proxy. |
