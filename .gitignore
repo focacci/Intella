@@ -2,6 +2,7 @@
 node_modules/
 .pnp.*
 .yarn/*
+.pnpm-store/
 
 # Build output
 dist/
@@ -14,12 +15,23 @@ out/
 .env.*
 !.env.example
 
+# Backups (encrypted DB snapshots + local key — never commit)
+backups/
+.backup-key
+
 # Database (SQLite — single-user, kept out of VCS)
 *.sqlite
 *.sqlite3
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 prisma/*.db
+prisma/*.db-shm
+prisma/*.db-wal
+prisma/*.sqlite
+prisma/*.sqlite-shm
+prisma/*.sqlite-wal
 prisma/migrations/dev.db*
 
 # Generated API clients (regenerated from openapi.yaml)

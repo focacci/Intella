@@ -1,0 +1,450 @@
+// ============================================================================
+// Intella — Prisma schema (v1 web prototype + v0.7 preflight)
+// Single-user, self-hosted. SQLite. No tenancy on most tables.
+//
+// Design notes:
+//  - SQLite has no native arrays/JSON columns, so list/blob fields are stored
+//    as JSON strings (typed `String`) with a `Json` doc-comment marking shape.
+//    Prisma + app-layer Zod parse these on read/write. If you migrate to
+//    Postgres later, switch these to `Json` / native arrays in one pass.
+//  - Every generated artifact (Program, MealPlan, GroceryList) stores the
+//    `inputConstraints` JSON that produced it — this is the backbone of
+//    reproducibility and the "explain why" transparency stories.
+//  - Deferred post-v1 price entities (Store, PriceEntry) are intentionally
+//    omitted to keep the grocery list store-agnostic.
+//
+// v0.7 preflight resolutions (see Intella_Preflight_Resolutions.md):
+//  - R1  Time: `Profile.timezone` (IANA) + UTC storage define "today".
+//  - R2  Sync ordering: a single append-only `ChangeLog` whose autoincrement
+//        PK is the monotonic `serverSeq`. `/sync/pull?since=` reads it.
+//  - R3  Polymorphic refs use a discriminated `{refType, refId}` pair (no
+//        cross-table FK; app-layer resolver). Syncable rows carry the sync
+//        quartet: `version` / `deletedAt` / `clientId` / `updatedAt`.
+//        Reference/content tables (Exercise, Recipe, Ingredient, alias) are
+//        NOT syncable (server-seeded/cached), so they omit the quartet.
+//  - R4  `Goal` target is structured (kind/value/unit + note) + `priority`.
+//  - R5  `Feedback` = user-authored signal (gets refType/refId/status/clientId).
+//        Observation/AdherenceEvent stay separate (added by v0.3/v0.4).
+//  - R6  Storage is metric-canonical; `Profile.unitSystem` is DISPLAY only.
+//  - R7  `Profile.activityLevel` seeds TDEE until the estimator supersedes it.
+//  - R8  Ingredient canonicalization: density/gramsPerPiece/aisleOrder +
+//        `IngredientAlias` make consolidation & pantry-subtraction computable.
+//  - R9  First-program cold start: `TrainingProfile.baselineLifts` or a
+//        calibration week (`Program.calibrationWeeks`).
+//  - R20b `constraintsHash`/`hashVersion` on generated artifacts for the
+//        content-hash cache.
+// ============================================================================
+
+// Prisma 7 (Nov 2025+): the connection URL now lives in prisma.config.ts, not
+// here. The datasource block declares only the provider. Client generation and
+// migrations pick up the SQLite adapter + DATABASE_URL from prisma.config.ts.
+// Keeping provider = "prisma-client-js" (v7 also offers the ESM "prisma-client"
+// generator, but the -js provider is the drop-in that avoids bundler friction).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ----------------------------------------------------------------------------
+// Profile & goals
+// ----------------------------------------------------------------------------
+
+/// One row. The physiological foundation every plan derives from.
+model Profile {
+  id            String    @id @default(cuid())
+  age           Int?
+  sex           String? // "male" | "female" | "other"
+  heightCm      Float?
+  weightKg      Float?
+  bodyFat       Float? // optional %, 0–100
+  timezone      String    @default("UTC") // IANA, e.g. "America/New_York" — defines "today" (R1)
+  unitSystem    String    @default("metric") // "metric" | "imperial" — DISPLAY only; storage is metric (R6)
+  activityLevel String    @default("moderate") // "sedentary"|"light"|"moderate"|"very_active"|"athlete" — TDEE seed (R7)
+  createdAt     DateTime  @default(now())
+  // sync metadata (R3)
+  version       Int       @default(0)
+  deletedAt     DateTime?
+  clientId      String?
+  updatedAt     DateTime  @updatedAt
+}
+
+/// Primary training/nutrition objective. Usually one active row.
+model Goal {
+  id          String    @id @default(cuid())
+  type        String // "build_muscle" | "lose_fat" | "get_stronger" | "general_health"
+  targetKind  String    @default("outcome") // "rate" | "absolute" | "outcome" (R4)
+  targetValue Float? // e.g. -0.5
+  targetUnit  String? // "kg_per_week" | "kg" | "pct_bodyfat" | "reps" | "kg_1rm" | "none"
+  note        String? // human phrasing only (display); engines read the structured fields
+  priority    Int       @default(1) // multi-goal conflict ordering (R14)
+  startDate   DateTime  @default(now())
+  status      String    @default("active") // "active" | "paused" | "achieved" | "abandoned"
+  createdAt   DateTime  @default(now())
+  // sync metadata (R3)
+  version     Int       @default(0)
+  deletedAt   DateTime?
+  clientId    String?
+  updatedAt   DateTime  @updatedAt
+}
+
+/// Drives program generation. equipment[] and injuries[] are JSON string arrays.
+model TrainingProfile {
+  id            String    @id @default(cuid())
+  experience    String // "beginner" | "intermediate" | "advanced"
+  daysPerWeek   Int
+  sessionMins   Int
+  equipment     String // Json string[]: ["full_gym"] | ["home_rack","dumbbells","bands"]
+  injuries      String    @default("[]") // Json Injury[]: [{ area, note, avoidPatterns[] }]  — HARD constraint
+  baselineLifts String    @default("[]") // Json [{ pattern|exerciseId, estWeight, estReps }] — first-program seed (R9)
+  createdAt     DateTime  @default(now())
+  // sync metadata (R3)
+  version       Int       @default(0)
+  deletedAt     DateTime?
+  clientId      String?
+  updatedAt     DateTime  @updatedAt
+}
+
+/// Nutrition constraints & computed targets. allergies[] are HARD excludes.
+model DietProfile {
+  id           String    @id @default(cuid())
+  pattern      String? // "none" | "vegetarian" | "vegan" | "pescatarian" | ...
+  restrictions String    @default("[]") // Json string[]
+  allergies    String    @default("[]") // Json string[]  — HARD excludes
+  dislikes     String    @default("[]") // Json string[]
+  cuisines     String    @default("[]") // Json string[]  — preferred
+  cookingSkill String? // "beginner" | "intermediate" | "advanced"
+  effortMax    Int? // effort ceiling, 1–5
+  kcal         Int? // computed target (Mifflin–St Jeor × activity, goal-adjusted)
+  macros       String? // Json { proteinG, carbsG, fatG }
+  budgetWeekly Float? // estimated weekly food budget — SOFT constraint (validator warns, R12)
+  mealsPerDay  Int       @default(3)
+  snacksPerDay Int       @default(1)
+  batchCooking Boolean   @default(true)
+  variety      String    @default("moderate") // "low" | "moderate" | "high"
+  createdAt    DateTime  @default(now())
+  // sync metadata (R3)
+  version      Int       @default(0)
+  deletedAt    DateTime?
+  clientId     String?
+  updatedAt    DateTime  @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// Training
+// ----------------------------------------------------------------------------
+
+/// Seeded exercise library (reference data — not syncable). Rules filter the
+/// allowed menu from this.
+model Exercise {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  primaryMuscles String // Json string[]
+  secondaryMus   String   @default("[]") // Json string[]
+  equipment      String // Json string[]: equipment needed
+  pattern        String // "squat" | "hinge" | "horizontal_push" | "vertical_pull" | ...
+  difficulty     String // "beginner" | "intermediate" | "advanced"
+  mediaUrl       String?
+  setLogs        SetLog[]
+  createdAt      DateTime @default(now())
+}
+
+/// A mesocycle. Stores the constraints that produced it (explainability).
+model Program {
+  id                String           @id @default(cuid())
+  goalType          String
+  split             String // Json: e.g. { name: "Upper/Lower", days: [...] }
+  weeks             Int
+  progressionScheme String // Json { rule, incrementLb, deloadTrigger }
+  inputConstraints  String // Json — the full computeTrainingConstraints() output
+  constraintsHash   String? // canonical hash of inputConstraints for the generation cache (R20b)
+  hashVersion       Int? // bump when the canonical-serialization rule changes (R20b)
+  calibrationWeeks  Int              @default(0) // week(s) to discover loads when no baselineLifts (R9)
+  degraded          Boolean          @default(false) // produced by rules-only/repair fallback (R10)
+  status            String           @default("active") // "active" | "completed" | "archived"
+  sessions          WorkoutSession[]
+  createdAt         DateTime         @default(now())
+  // sync metadata (R3)
+  version           Int              @default(0)
+  deletedAt         DateTime?
+  clientId          String?
+  updatedAt         DateTime         @updatedAt
+}
+
+/// One training day within a program.
+model WorkoutSession {
+  id           String    @id @default(cuid())
+  programId    String
+  program      Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
+  date         DateTime
+  weekNo       Int
+  label        String? // "Upper A — Push" | "Calibration" (R9)
+  status       String    @default("planned") // "planned" | "completed" | "skipped" | "partial"
+  plannedItems String // Json PlannedItem[]: [{ exerciseId, targetSets, repRange, targetLoad, rpe }]
+  coachingNote String? // plain-language LLM note
+  setLogs      SetLog[]
+  createdAt    DateTime  @default(now())
+  // sync metadata (R3)
+  version      Int       @default(0)
+  deletedAt    DateTime?
+  clientId     String?
+  updatedAt    DateTime  @updatedAt
+
+  @@index([date])
+  @@index([status])
+}
+
+/// Logged actuals. Feeds progression math on the next cycle. Birthplace of
+/// in-the-moment data — logged offline, synced up (R20).
+model SetLog {
+  id         String         @id @default(cuid())
+  sessionId  String
+  session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise       @relation(fields: [exerciseId], references: [id])
+  setNo      Int
+  reps       Int?
+  weight     Float?
+  rpe        Float?
+  createdAt  DateTime       @default(now())
+  // sync metadata (R3)
+  version    Int            @default(0)
+  deletedAt  DateTime?
+  clientId   String?
+  updatedAt  DateTime       @updatedAt
+
+  @@index([sessionId])
+  @@index([exerciseId])
+}
+
+/// Bodyweight & measurement tracking for progress charts.
+model BodyMetric {
+  id           String    @id @default(cuid())
+  date         DateTime
+  weightKg     Float?
+  bodyFat      Float?
+  measurements String? // Json { chest, waist, arm, ... }
+  createdAt    DateTime  @default(now())
+  // sync metadata (R3)
+  version      Int       @default(0)
+  deletedAt    DateTime?
+  clientId     String?
+  updatedAt    DateTime  @updatedAt
+
+  @@index([date])
+}
+
+// ----------------------------------------------------------------------------
+// Meals & recipes
+// ----------------------------------------------------------------------------
+
+/// From a provider (Spoonacular) or LLM-adapted. Cached locally (reference /
+/// content cache — not syncable; the provider is a fill-once source, R12).
+model Recipe {
+  id            String        @id @default(cuid())
+  name          String
+  ingredients   String // Json RecipeIngredient[]: [{ ingredientId?, raw, qty, unit }]
+  steps         String // Json string[]
+  macrosPerServ String // Json { kcal, proteinG, carbsG, fatG }
+  costEst       Float? // per-serving estimate (NOT live pricing) — drives SOFT budget check (R12)
+  timeMins      Int?
+  tags          String        @default("[]") // Json string[]: cuisines, "batch", ...
+  sourceId      String? // provider id
+  source        String        @default("spoonacular") // "spoonacular" | "llm" | "manual"
+  plannedMeals  PlannedMeal[]
+  createdAt     DateTime      @default(now())
+
+  @@index([sourceId])
+}
+
+/// Canonical ingredient. `category` drives aisle grouping; density/piece data
+/// makes unit normalization & pantry-subtraction computable (R8). Reference
+/// data — not syncable.
+model Ingredient {
+  id            String            @id @default(cuid())
+  canonicalName String            @unique
+  defaultUnit   String
+  category      String // "produce" | "meat_seafood" | "dairy_eggs" | "pantry" | "frozen" | ...
+  aisleOrder    Int? // stable in-aisle sort position (R8)
+  densityGPerMl Float? // volume↔weight conversion, e.g. flour ≈ 0.53 (R8)
+  gramsPerPiece Float? // count↔weight, e.g. onion ≈ 110 g (R8)
+  nutritionRef  String? // provider/USDA reference id
+  providerId    String?
+  aliases       IngredientAlias[]
+  pantryItems   PantryItem[]
+  groceryItems  GroceryListItem[]
+  createdAt     DateTime          @default(now())
+
+  @@index([category])
+}
+
+/// Maps provider strings / synonyms ("yellow onion","brown onion") to one
+/// canonical Ingredient — the backbone of consolidation & pantry match (R8).
+model IngredientAlias {
+  id           String     @id @default(cuid())
+  alias        String     @unique
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  source       String     @default("manual") // "spoonacular" | "usda" | "llm" | "manual"
+  createdAt    DateTime   @default(now())
+
+  @@index([ingredientId])
+}
+
+/// One meal plan per week.
+model MealPlan {
+  id               String        @id @default(cuid())
+  weekStart        DateTime
+  status           String        @default("active") // "active" | "archived"
+  inputConstraints String // Json — computeNutritionTargets() output (explainability)
+  constraintsHash  String? // canonical hash for the generation cache (R20b)
+  hashVersion      Int?
+  degraded         Boolean       @default(false) // rules-only/repair fallback (R10)
+  meals            PlannedMeal[]
+  groceryLists     GroceryList[]
+  createdAt        DateTime      @default(now())
+  // sync metadata (R3)
+  version          Int           @default(0)
+  deletedAt        DateTime?
+  clientId         String?
+  updatedAt        DateTime      @updatedAt
+
+  @@index([weekStart])
+}
+
+/// A slot in the weekly grid.
+model PlannedMeal {
+  id        String    @id @default(cuid())
+  planId    String
+  plan      MealPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  day       Int // 0–6
+  slot      String // "breakfast" | "lunch" | "dinner" | "snack"
+  recipeId  String
+  recipe    Recipe    @relation(fields: [recipeId], references: [id])
+  servings  Float     @default(1)
+  createdAt DateTime  @default(now())
+  // sync metadata (R3)
+  version   Int       @default(0)
+  deletedAt DateTime?
+  clientId  String?
+  updatedAt DateTime  @updatedAt
+
+  @@unique([planId, day, slot])
+  @@index([planId])
+}
+
+// ----------------------------------------------------------------------------
+// Pantry & grocery
+// ----------------------------------------------------------------------------
+
+/// Current pantry stock. Subtracted from generated lists.
+model PantryItem {
+  id           String     @id @default(cuid())
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  qty          Float
+  unit         String
+  createdAt    DateTime   @default(now())
+  // sync metadata (R3)
+  version      Int        @default(0)
+  deletedAt    DateTime?
+  clientId     String?
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([ingredientId])
+}
+
+/// One grocery list per meal plan. Regeneration ARCHIVES rather than deletes so
+/// offline check-offs are never orphaned (R19).
+model GroceryList {
+  id        String            @id @default(cuid())
+  planId    String
+  plan      MealPlan          @relation(fields: [planId], references: [id], onDelete: Cascade)
+  status    String            @default("active") // "active" | "archived"
+  items     GroceryListItem[]
+  createdAt DateTime          @default(now())
+  // sync metadata (R3)
+  version   Int               @default(0)
+  deletedAt DateTime?
+  clientId  String?
+  updatedAt DateTime          @updatedAt
+
+  @@index([planId])
+}
+
+/// Consolidated, pantry-aware, categorized line. `sourceMeals` powers the
+/// "which meals drove this item" transparency story. Check-off events carry
+/// {listId, ingredientId} so a check survives list regeneration (R19).
+model GroceryListItem {
+  id           String       @id @default(cuid())
+  listId       String
+  list         GroceryList  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  ingredientId String?
+  ingredient   Ingredient?  @relation(fields: [ingredientId], references: [id])
+  displayName  String // cleaned shoppable line, e.g. "onions, ~2 medium"
+  qty          Float?
+  unit         String?
+  category     String // aisle grouping
+  checked      Boolean      @default(false)
+  manual       Boolean      @default(false) // user-added item
+  sourceMeals  String       @default("[]") // Json string[]: PlannedMeal ids (advisory, rewritten on regen — R3/R19)
+  createdAt    DateTime     @default(now())
+  // sync metadata (R3)
+  version      Int          @default(0)
+  deletedAt    DateTime?
+  clientId     String?
+  updatedAt    DateTime     @updatedAt
+
+  @@index([listId])
+  @@index([category])
+}
+
+// ----------------------------------------------------------------------------
+// Adaptation
+// ----------------------------------------------------------------------------
+
+/// User-authored adaptation signal (R5). Free-text is parsed into `structured`
+/// by a small Claude call (status raw→parsed), then read into the next
+/// computeConstraints() cycle. System-observed beliefs live in `Observation`
+/// (v0.4) and computed roll-ups in `AdherenceEvent` (v0.3) — both separate.
+model Feedback {
+  id         String    @id @default(cuid())
+  domain     String // "training" | "meals" | "grocery"
+  refType    String? // discriminated ref (R3): "session"|"plan"|"meal"|"grocery_item"|...
+  refId      String? // sessionId | planId | itemId — resolved app-side by refType
+  structured String? // Json — parsed signal, e.g. { felt: "easy" } | { injury: {...} }
+  freeText   String?
+  status     String    @default("raw") // "raw" | "parsed" (R5)
+  createdAt  DateTime  @default(now())
+  // sync metadata (R3)
+  version    Int       @default(0)
+  deletedAt  DateTime?
+  clientId   String?
+  updatedAt  DateTime  @updatedAt
+
+  @@index([domain])
+  @@index([refType, refId])
+}
+
+// ----------------------------------------------------------------------------
+// Sync (R2)
+// ----------------------------------------------------------------------------
+
+/// Append-only change log. Its autoincrement PK IS the monotonic `serverSeq`
+/// cursor read by `GET /sync/pull?since=`. Every mutating server write appends
+/// one row (upsert|delete); tombstones ride the same stream. This is the single
+/// ordering mechanism — syncable rows carry the R3 quartet for the merge, this
+/// carries the sequence. (R2)
+model ChangeLog {
+  serverSeq Int      @id @default(autoincrement())
+  tableName String
+  rowId     String
+  op        String // "upsert" | "delete"
+  clientId  String? // origin device, for idempotent replay
+  ts        DateTime @default(now())
+
+  @@index([tableName, rowId])
+}
