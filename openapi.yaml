@@ -1,0 +1,1282 @@
+openapi: 3.1.0
+info:
+  title: Intella API
+  version: 0.7.0
+  description: >
+    Single-user, self-hosted adaptive coach: training, meal planning, and a
+    store-agnostic grocery list. Every generator follows the same
+    rules -> LLM -> validator pattern and persists the input constraints that
+    produced its output (reproducibility + explainability).
+
+    Core entities (Profile, Goal, TrainingProfile, DietProfile) reflect the
+    v0.7 preflight resolutions (see Intella_Preflight_Resolutions.md).
+
+    This spec is the single source of truth; the TypeScript web client and the
+    Swift iOS client are both generated from it.
+
+servers:
+  - url: http://localhost:8787
+    description: Local desktop host
+  - url: https://intella.your-tailnet.ts.net
+    description: Private access over Tailscale (MagicDNS)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Profile
+  - name: Training
+  - name: Meals
+  - name: Grocery
+  - name: Pantry
+  - name: System
+  - name: Sync
+  - name: Devices
+
+paths:
+  # ------------------------------------------------------------------ System
+  /health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /system/status:
+    get:
+      tags: [System]
+      operationId: getSystemStatus
+      summary: Degraded-mode system status
+      responses:
+        "200":
+          description: Current operational status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /today:
+    get:
+      tags: [System]
+      summary: Dashboard aggregate — today's workout, meals, and grocery nudge
+      responses:
+        "200":
+          description: Aggregated day view
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TodayView" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ----------------------------------------------------------------- Profile
+  /profile:
+    get:
+      tags: [Profile]
+      operationId: getProfile
+      summary: Read profile
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [Profile]
+      operationId: putProfile
+      summary: Upsert profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileInput" }
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Profile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /diet-profile:
+    get:
+      tags: [Profile]
+      summary: Read diet profile
+      responses:
+        "200":
+          description: Diet profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DietProfile" }
+    put:
+      tags: [Profile]
+      summary: Upsert diet profile (allergies are hard excludes)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DietProfileInput" }
+      responses:
+        "200":
+          description: Updated diet profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DietProfile" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /training-profile:
+    get:
+      tags: [Profile]
+      summary: Read training profile
+      responses:
+        "200":
+          description: Training profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainingProfile" }
+    put:
+      tags: [Profile]
+      summary: Upsert training profile (injuries are hard constraints)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingProfileInput" }
+      responses:
+        "200":
+          description: Updated training profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainingProfile" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /goals:
+    get:
+      tags: [Profile]
+      summary: List goals
+      responses:
+        "200":
+          description: Goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Goal" }
+    put:
+      tags: [Profile]
+      summary: Set / update active goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GoalInput" }
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Goal" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  # ---------------------------------------------------------------- Training
+  /training/program:generate:
+    post:
+      tags: [Training]
+      summary: Generate a program (rules -> LLM -> validator)
+      description: >
+        Assembles training constraints from profile/goal/history, calls Claude
+        with a schema-bound tool to select exercises within the allowed menu,
+        validates volume landmarks and injury/equipment exclusions, and persists
+        the Program with its input constraints.
+      responses:
+        "201":
+          description: Program created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Program" }
+        "422":
+          description: Generation failed validation after repair attempts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenerationError" }
+
+  /training/program/current:
+    get:
+      tags: [Training]
+      summary: Read the active program
+      responses:
+        "200":
+          description: Current program
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Program" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /training/session/today:
+    get:
+      tags: [Training]
+      summary: Today's session with pre-filled targets
+      responses:
+        "200":
+          description: Today's session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkoutSession" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /training/session/{id}/log:
+    post:
+      tags: [Training]
+      summary: Log actual sets for a session
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sets]
+              properties:
+                status:
+                  type: string
+                  enum: [completed, skipped, partial]
+                sets:
+                  type: array
+                  items: { $ref: "#/components/schemas/SetLogInput" }
+      responses:
+        "200":
+          description: Updated session with logged sets
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkoutSession" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /training/session/{id}/feedback:
+    post:
+      tags: [Training]
+      summary: Submit session feedback (free-text parsed into a signal)
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FeedbackInput" }
+      responses:
+        "202":
+          description: Feedback accepted; will re-parameterize next generation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Feedback" }
+
+  /training/progress:
+    get:
+      tags: [Training]
+      summary: Progress series — volume, est-1RM, bodyweight
+      parameters:
+        - name: metric
+          in: query
+          schema: { type: string, enum: [volume, est1rm, bodyweight] }
+        - name: exerciseId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Time series
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgressSeries" }
+
+  /exercises:
+    get:
+      tags: [Training]
+      summary: Exercise library (filterable)
+      parameters:
+        - name: equipment
+          in: query
+          schema: { type: string }
+        - name: muscle
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Exercise" }
+
+  # ------------------------------------------------------------------- Meals
+  /meals/plan:generate:
+    post:
+      tags: [Meals]
+      summary: Generate a weekly meal plan (rules -> LLM -> validator)
+      description: >
+        Computes macro/budget/effort constraints, selects recipes to hit weekly
+        macro averages within budget, validates macros tolerance, zero allergens,
+        and cost <= budget, then persists the MealPlan with its constraints.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                weekStart: { type: string, format: date }
+      responses:
+        "201":
+          description: Meal plan created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MealPlan" }
+        "422":
+          description: Generation failed validation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenerationError" }
+
+  /meals/plan/current:
+    get:
+      tags: [Meals]
+      summary: Read the current week's meal plan
+      responses:
+        "200":
+          description: Meal plan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MealPlan" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /meals/plan/{id}/meal/{slot}:
+    put:
+      tags: [Meals]
+      summary: Swap a meal for a constraint-aware alternative
+      parameters:
+        - { $ref: "#/components/parameters/IdPath" }
+        - name: slot
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipeId:
+                  type: string
+                  description: If provided, swap to this recipe; else return alternatives.
+      responses:
+        "200":
+          description: Updated plan or list of alternatives
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/MealPlan"
+                  - type: object
+                    properties:
+                      alternatives:
+                        type: array
+                        items: { $ref: "#/components/schemas/Recipe" }
+
+  /meals/plan/{id}/feedback:
+    post:
+      tags: [Meals]
+      summary: Rate or comment on the plan (shapes future selection)
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FeedbackInput" }
+      responses:
+        "202":
+          description: Feedback accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Feedback" }
+
+  /recipes/{id}:
+    get:
+      tags: [Meals]
+      summary: Recipe detail (steps + per-serving macros)
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Recipe
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recipe" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ----------------------------------------------------------------- Grocery
+  /grocery/list:generate:
+    post:
+      tags: [Grocery]
+      summary: Build the list from the current meal plan
+      description: >
+        Deterministically aggregates the week's ingredients, normalizes units,
+        subtracts pantry stock, and rounds to sensible quantities; Claude then
+        cleans each line into a shoppable item and assigns an aisle. Validator
+        ensures every ingredient is covered and categorized.
+      responses:
+        "201":
+          description: Grocery list created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GroceryList" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /grocery/list/current:
+    get:
+      tags: [Grocery]
+      summary: Read the current grocery list
+      responses:
+        "200":
+          description: Grocery list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GroceryList" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /grocery/list/item/{id}:
+    put:
+      tags: [Grocery]
+      summary: Check off, edit quantity, or add a manual item
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GroceryItemUpdate" }
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GroceryListItem" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  # ------------------------------------------------------------------ Pantry
+  /pantry:
+    get:
+      tags: [Pantry]
+      summary: List pantry stock
+      responses:
+        "200":
+          description: Pantry items
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PantryItem" }
+    post:
+      tags: [Pantry]
+      summary: Add a pantry item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PantryItemInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PantryItem" }
+    put:
+      tags: [Pantry]
+      summary: Update a pantry item quantity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PantryItemInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PantryItem" }
+
+  # -------------------------------------------------------------------- Sync
+  # STUB (lands with its phase). Documented now so the contract reflects the plan.
+  /sync/push:
+    post:
+      tags: [Sync]
+      summary: Push local changes (STUB — lands with its phase)
+      description: >
+        Idempotent by clientId. Body carries append-only events plus
+        mutable-row upserts; the server appends one ChangeLog row per mutating
+        write (R2) and replays are deduplicated by clientId (R2/R3). Syncable
+        rows merge on the R3 sync quartet (version / deletedAt / clientId /
+        updatedAt).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: Origin device id; makes the push idempotent (R2).
+                events:
+                  type: array
+                  description: Append-only events (e.g. set logs, check-offs).
+                  items: { type: object, additionalProperties: true }
+                upserts:
+                  type: array
+                  description: Mutable-row upserts carrying the R3 sync quartet.
+                  items: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: Applied; returns the latest serverSeq cursor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverSeq:
+                    type: integer
+                    description: Highest ChangeLog serverSeq after applying this push.
+                  applied: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "501": { $ref: "#/components/responses/NotImplemented" }
+
+  /sync/pull:
+    get:
+      tags: [Sync]
+      summary: Pull changes since a cursor (STUB — lands with its phase)
+      description: >
+        Reads forward from the append-only ChangeLog (whose autoincrement PK is
+        the monotonic serverSeq), returning changes and tombstones since the
+        cursor (R2).
+      parameters:
+        - name: since
+          in: query
+          required: false
+          schema: { type: integer, default: 0 }
+          description: serverSeq cursor; returns rows with serverSeq > since (R2).
+      responses:
+        "200":
+          description: Changes and tombstones since the cursor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverSeq:
+                    type: integer
+                    description: New cursor to persist for the next pull.
+                  changes:
+                    type: array
+                    description: Upserted rows (table + row payload).
+                    items: { type: object, additionalProperties: true }
+                  tombstones:
+                    type: array
+                    description: Deleted rows ({ table, rowId }) since the cursor.
+                    items: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "501": { $ref: "#/components/responses/NotImplemented" }
+
+  # ----------------------------------------------------------------- Devices
+  /auth/tokens:
+    get:
+      tags: [Devices]
+      operationId: listApiTokens
+      summary: List per-device tokens (never returns the secret)
+      description: >
+        Lists minted device tokens with their metadata. The stored value is a
+        SHA-256 hash; the plaintext secret is never returned after minting (T0.9).
+      responses:
+        "200":
+          description: Device tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ApiToken" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Devices]
+      operationId: mintApiToken
+      summary: Mint a new per-device token
+      description: >
+        Mints a per-device bearer token. The response `token` is the plaintext
+        secret and is shown ONLY once — only its SHA-256 hash is persisted (T0.9).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApiTokenInput" }
+      responses:
+        "201":
+          description: Token minted; `token` is the plaintext secret, shown once.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MintedApiToken" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /auth/tokens/{id}:
+    delete:
+      tags: [Devices]
+      operationId: revokeApiToken
+      summary: Revoke a per-device token
+      description: >
+        Revokes one device token by stamping `revokedAt`. From then on that token
+        401s while every other token keeps working (T0.9). Idempotent.
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "204":
+          description: Revoked (idempotent — already-revoked tokens also return 204).
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /pair:
+    get:
+      tags: [Devices]
+      operationId: pairDevice
+      summary: Redeem a pairing PIN for a per-device token (T0.12 · R22)
+      description: >
+        Device pairing. Requires an OPEN pairing window (opened by first-run
+        `setup`) plus its valid short-lived PIN (R22). On success mints a new
+        per-device bearer token and single-use-consumes the window. Outside any
+        open window — or with a bad, expired, or already-consumed PIN — returns
+        403; a trusted tailnet peer cannot silently pull a token (R22). This is
+        the only unauthenticated endpoint (the device has no token yet); the PIN
+        + open window are the gate.
+      security: []
+      parameters:
+        - name: pin
+          in: query
+          required: true
+          schema: { type: string }
+          description: Short-lived pairing PIN carried by the setup QR (R22).
+        - name: name
+          in: query
+          required: false
+          schema: { type: string }
+          description: >
+            Optional device label for the minted token (e.g. "iPhone 15 Pro").
+            Falls back to the window's configured device name.
+      responses:
+        "200":
+          description: Paired; returns a per-device token.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PairResult" }
+        "403":
+          description: No open pairing window, or invalid/expired/consumed PIN (R22).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Single static token over Tailscale.
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ValidationError:
+      description: Request failed Zod validation
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotImplemented:
+      description: Endpoint recognized but not yet implemented (stub — lands with its phase)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+
+    SystemStatus:
+      type: object
+      required: [mode, llm, provider, lastBackupAt, lastSyncAt, spendMTD, spendCeiling]
+      properties:
+        mode:
+          type: string
+          enum: [full, rules_local, rules_only]
+          description: Degraded-mode ladder selected by current force toggles.
+        llm:
+          type: string
+          enum: [up, down]
+        provider:
+          type: string
+          enum: [up, down]
+        lastBackupAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSyncAt:
+          type: string
+          format: date-time
+          nullable: true
+        spendMTD:
+          type: number
+          description: Month-to-date LLM spend in USD.
+        spendCeiling:
+          type: number
+          description: Configured monthly LLM spend ceiling in USD.
+
+    PairResult:
+      type: object
+      required: [token, deviceId, name]
+      properties:
+        token:
+          type: string
+          description: Per-device bearer token (shown once — store in the Keychain).
+        deviceId:
+          type: string
+          description: Id of the minted ApiToken row (revoke target).
+        name:
+          type: string
+          description: Human device label recorded for the token.
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    GenerationError:
+      type: object
+      description: A generator produced output that could not be repaired to satisfy constraints.
+      properties:
+        code: { type: string, example: constraint_violation }
+        message: { type: string }
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              rule: { type: string, example: no_allergen }
+              detail: { type: string }
+
+    ApiToken:
+      type: object
+      required: [id, name, createdAt, lastUsedAt, revokedAt]
+      properties:
+        id: { type: string }
+        name: { type: string, description: Human device label, e.g. "iPhone 15 Pro". }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Stamped on each authenticated request; null until first use.
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Non-null once revoked; the token 401s from then on.
+    ApiTokenInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Human device label, e.g. "iPhone 15 Pro".
+    MintedApiToken:
+      type: object
+      description: A freshly minted token. `token` is the plaintext secret, shown only once.
+      required: [id, name, createdAt, lastUsedAt, revokedAt, token]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+        revokedAt: { type: string, format: date-time, nullable: true }
+        token:
+          type: string
+          description: The plaintext bearer token — persisted only as a hash, never shown again.
+
+    SyncMeta:
+      type: object
+      description: >
+        Server-managed sync metadata carried by every syncable row (R3). Clients
+        echo these on push for the merge; the ChangeLog carries ordering (R2).
+        Mostly server-managed — not part of write inputs.
+      properties:
+        version: { type: integer, description: Optimistic-concurrency counter. }
+        deletedAt:
+          {
+            type: string,
+            format: date-time,
+            nullable: true,
+            description: Tombstone timestamp; null when live.
+          }
+        clientId: { type: string, nullable: true, description: Origin device id. }
+        updatedAt:
+          { type: string, format: date-time, description: Last write time (UTC). }
+
+    Macros:
+      type: object
+      properties:
+        kcal: { type: integer }
+        proteinG: { type: number }
+        carbsG: { type: number }
+        fatG: { type: number }
+
+    Injury:
+      type: object
+      properties:
+        area: { type: string, example: left_knee }
+        note: { type: string, example: avoid deep loaded flexion }
+        avoidPatterns:
+          type: array
+          items: { type: string }
+
+    Profile:
+      type: object
+      required:
+        [id, age, sex, heightCm, weightKg, bodyFat, timezone, unitSystem, activityLevel]
+      properties:
+        id: { type: string }
+        age: { type: integer, nullable: true }
+        sex: { type: string, nullable: true }
+        heightCm: { type: number, nullable: true }
+        weightKg: { type: number, nullable: true }
+        bodyFat: { type: number, nullable: true }
+        timezone:
+          type: string
+          default: UTC
+          description: IANA timezone (e.g. "America/New_York"); defines "today" (R1).
+        unitSystem:
+          type: string
+          enum: [metric, imperial]
+          default: metric
+          description: Display preference only; storage is metric-canonical (R6).
+        activityLevel:
+          type: string
+          enum: [sedentary, light, moderate, very_active, athlete]
+          default: moderate
+          description: Seeds TDEE until the estimator supersedes it (R7).
+    ProfileInput:
+      type: object
+      required: [timezone, unitSystem, activityLevel]
+      properties:
+        age: { type: integer }
+        sex: { type: string, enum: [male, female, other] }
+        heightCm: { type: number }
+        weightKg: { type: number }
+        bodyFat: { type: number }
+        timezone:
+          type: string
+          default: UTC
+          description: IANA timezone; defaulted from the device at onboarding (R1).
+        unitSystem: { type: string, enum: [metric, imperial], default: metric }
+        activityLevel:
+          type: string
+          enum: [sedentary, light, moderate, very_active, athlete]
+          default: moderate
+
+    Goal:
+      type: object
+      properties:
+        id: { type: string }
+        type:
+          { type: string, enum: [build_muscle, lose_fat, get_stronger, general_health] }
+        targetKind:
+          type: string
+          enum: [rate, absolute, outcome]
+          default: outcome
+          description: Structured target shape; engines read this, not free text (R4).
+        targetValue:
+          type: number
+          nullable: true
+          description: e.g. -0.5 for a 0.5 kg/week cut (R4).
+        targetUnit:
+          type: string
+          enum: [kg_per_week, kg, pct_bodyfat, reps, kg_1rm, none]
+          nullable: true
+          description: Unit for targetValue (R4).
+        note:
+          type: string
+          nullable: true
+          description: Human phrasing only (display); not read by engines (R4).
+        priority:
+          type: integer
+          default: 1
+          description: Multi-goal conflict ordering (R14).
+        startDate: { type: string, format: date-time }
+        status: { type: string, enum: [active, paused, achieved, abandoned] }
+    GoalInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          { type: string, enum: [build_muscle, lose_fat, get_stronger, general_health] }
+        targetKind: { type: string, enum: [rate, absolute, outcome], default: outcome }
+        targetValue: { type: number, nullable: true }
+        targetUnit:
+          type: string
+          enum: [kg_per_week, kg, pct_bodyfat, reps, kg_1rm, none]
+          nullable: true
+        note: { type: string }
+        priority: { type: integer, default: 1 }
+
+    BaselineLift:
+      type: object
+      description: Optional onboarding "current strength" capture; seeds week-1 loads via e1RM (R9).
+      properties:
+        pattern:
+          type: string
+          description: Movement pattern, e.g. "squat" (use pattern OR exerciseId).
+        exerciseId:
+          type: string
+          description: Specific exercise (use pattern OR exerciseId).
+        estWeight:
+          type: number
+          description: Estimated working weight (kg, metric-canonical).
+        estReps: { type: integer, description: Estimated reps at estWeight. }
+
+    TrainingProfile:
+      type: object
+      properties:
+        id: { type: string }
+        experience: { type: string, enum: [beginner, intermediate, advanced] }
+        daysPerWeek: { type: integer }
+        sessionMins: { type: integer }
+        equipment:
+          type: array
+          items: { type: string }
+        injuries:
+          type: array
+          items: { $ref: "#/components/schemas/Injury" }
+        baselineLifts:
+          type: array
+          description: Optional starting-strength seed; absent → week 1 is a calibration week (R9).
+          items: { $ref: "#/components/schemas/BaselineLift" }
+    TrainingProfileInput:
+      type: object
+      required: [experience, daysPerWeek, sessionMins, equipment]
+      properties:
+        experience: { type: string, enum: [beginner, intermediate, advanced] }
+        daysPerWeek: { type: integer, minimum: 1, maximum: 7 }
+        sessionMins: { type: integer }
+        equipment:
+          type: array
+          items: { type: string }
+        injuries:
+          type: array
+          items: { $ref: "#/components/schemas/Injury" }
+        baselineLifts:
+          type: array
+          items: { $ref: "#/components/schemas/BaselineLift" }
+
+    DietProfile:
+      type: object
+      properties:
+        id: { type: string }
+        pattern: { type: string, nullable: true }
+        restrictions: { type: array, items: { type: string } }
+        allergies: { type: array, items: { type: string } }
+        dislikes: { type: array, items: { type: string } }
+        cuisines: { type: array, items: { type: string } }
+        cookingSkill: { type: string, nullable: true }
+        effortMax: { type: integer, nullable: true }
+        kcal: { type: integer, nullable: true }
+        macros: { $ref: "#/components/schemas/Macros" }
+        budgetWeekly:
+          type: number
+          nullable: true
+          description: >
+            Estimated weekly food budget. SOFT constraint — the validator warns
+            when estimated cost exceeds it but never rejects a plan (R12).
+        mealsPerDay: { type: integer }
+        snacksPerDay: { type: integer }
+        batchCooking: { type: boolean }
+        variety: { type: string, enum: [low, moderate, high] }
+    DietProfileInput:
+      type: object
+      properties:
+        pattern: { type: string }
+        restrictions: { type: array, items: { type: string } }
+        allergies: { type: array, items: { type: string } }
+        dislikes: { type: array, items: { type: string } }
+        cuisines: { type: array, items: { type: string } }
+        cookingSkill: { type: string, enum: [beginner, intermediate, advanced] }
+        effortMax: { type: integer, minimum: 1, maximum: 5 }
+        budgetWeekly:
+          type: number
+          description: Weekly food budget — a SOFT guide; the validator warns, not rejects (R12).
+        mealsPerDay: { type: integer }
+        snacksPerDay: { type: integer }
+        batchCooking: { type: boolean }
+        variety: { type: string, enum: [low, moderate, high] }
+
+    Exercise:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        primaryMuscles: { type: array, items: { type: string } }
+        secondaryMus: { type: array, items: { type: string } }
+        equipment: { type: array, items: { type: string } }
+        pattern: { type: string }
+        difficulty: { type: string }
+        mediaUrl: { type: string, nullable: true }
+
+    PlannedItem:
+      type: object
+      properties:
+        exerciseId: { type: string }
+        exerciseName: { type: string }
+        targetSets: { type: integer }
+        repRange: { type: string, example: "6-8" }
+        targetLoad: { type: number, nullable: true }
+        rpe: { type: number, nullable: true }
+
+    Program:
+      type: object
+      properties:
+        id: { type: string }
+        goalType: { type: string }
+        split: { type: object, additionalProperties: true }
+        weeks: { type: integer }
+        progressionScheme: { type: object, additionalProperties: true }
+        inputConstraints:
+          type: object
+          additionalProperties: true
+          description: The rules-layer output that produced this program (explainability).
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    WorkoutSession:
+      type: object
+      properties:
+        id: { type: string }
+        programId: { type: string }
+        date: { type: string, format: date-time }
+        weekNo: { type: integer }
+        label: { type: string, nullable: true }
+        status: { type: string, enum: [planned, completed, skipped, partial] }
+        plannedItems:
+          type: array
+          items: { $ref: "#/components/schemas/PlannedItem" }
+        coachingNote: { type: string, nullable: true }
+        setLogs:
+          type: array
+          items: { $ref: "#/components/schemas/SetLog" }
+
+    SetLog:
+      type: object
+      properties:
+        id: { type: string }
+        exerciseId: { type: string }
+        setNo: { type: integer }
+        reps: { type: integer, nullable: true }
+        weight: { type: number, nullable: true }
+        rpe: { type: number, nullable: true }
+    SetLogInput:
+      type: object
+      required: [exerciseId, setNo]
+      properties:
+        exerciseId: { type: string }
+        setNo: { type: integer }
+        reps: { type: integer }
+        weight: { type: number }
+        rpe: { type: number, minimum: 1, maximum: 10 }
+
+    ProgressSeries:
+      type: object
+      properties:
+        metric: { type: string }
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date-time }
+              value: { type: number }
+
+    Recipe:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        ingredients:
+          type: array
+          items:
+            type: object
+            properties:
+              ingredientId: { type: string, nullable: true }
+              raw: { type: string }
+              qty: { type: number, nullable: true }
+              unit: { type: string, nullable: true }
+        steps: { type: array, items: { type: string } }
+        macrosPerServ: { $ref: "#/components/schemas/Macros" }
+        costEst: { type: number, nullable: true }
+        timeMins: { type: integer, nullable: true }
+        tags: { type: array, items: { type: string } }
+        source: { type: string }
+
+    MealPlan:
+      type: object
+      properties:
+        id: { type: string }
+        weekStart: { type: string, format: date }
+        status: { type: string }
+        inputConstraints:
+          type: object
+          additionalProperties: true
+          description: computeNutritionTargets() output (explainability).
+        meals:
+          type: array
+          items: { $ref: "#/components/schemas/PlannedMeal" }
+        totals:
+          type: object
+          description: Running macro/cost adherence vs targets.
+          properties:
+            avgMacros: { $ref: "#/components/schemas/Macros" }
+            estCost: { type: number }
+            budget: { type: number }
+
+    PlannedMeal:
+      type: object
+      properties:
+        id: { type: string }
+        day: { type: integer }
+        slot: { type: string }
+        recipeId: { type: string }
+        recipeName: { type: string }
+        servings: { type: number }
+        macros: { $ref: "#/components/schemas/Macros" }
+
+    PantryItem:
+      type: object
+      properties:
+        id: { type: string }
+        ingredientId: { type: string }
+        ingredientName: { type: string }
+        qty: { type: number }
+        unit: { type: string }
+    PantryItemInput:
+      type: object
+      required: [ingredientId, qty, unit]
+      properties:
+        ingredientId: { type: string }
+        qty: { type: number }
+        unit: { type: string }
+
+    GroceryList:
+      type: object
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        status: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/GroceryListItem" }
+        skippedPantry:
+          type: array
+          description: Items omitted because they're already in the pantry.
+          items: { type: string }
+
+    GroceryListItem:
+      type: object
+      properties:
+        id: { type: string }
+        ingredientId: { type: string, nullable: true }
+        displayName: { type: string }
+        qty: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        category: { type: string }
+        checked: { type: boolean }
+        manual: { type: boolean }
+        sourceMeals:
+          type: array
+          description: PlannedMeal ids that contributed to this line.
+          items: { type: string }
+    GroceryItemUpdate:
+      type: object
+      properties:
+        checked: { type: boolean }
+        qty: { type: number }
+        unit: { type: string }
+        displayName: { type: string }
+        manual: { type: boolean }
+
+    FeedbackInput:
+      type: object
+      properties:
+        structured:
+          type: object
+          additionalProperties: true
+          description: Optional pre-structured signal, e.g. { felt "easy" }.
+        freeText:
+          type: string
+          description: Natural language; parsed into a structured signal by Claude.
+    Feedback:
+      type: object
+      properties:
+        id: { type: string }
+        domain: { type: string, description: '"training" | "meals" | "grocery"' }
+        refType:
+          type: string
+          nullable: true
+          description: Discriminated ref (R3/R5), e.g. "session" | "plan" | "meal" | "grocery_item".
+        refId:
+          type: string
+          nullable: true
+          description: Id resolved app-side by refType (R3/R5).
+        structured: { type: object, additionalProperties: true }
+        freeText: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [raw, parsed]
+          description: User-authored signal; raw until parsed by a small Claude call (R5).
+        createdAt: { type: string, format: date-time }
+
+    TodayView:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        session: { $ref: "#/components/schemas/WorkoutSession" }
+        meals:
+          type: array
+          items: { $ref: "#/components/schemas/PlannedMeal" }
+        macroTotals: { $ref: "#/components/schemas/Macros" }
+        grocery:
+          type: object
+          properties:
+            listId: { type: string }
+            itemCount: { type: integer }
+            pantrySubtracted: { type: integer }

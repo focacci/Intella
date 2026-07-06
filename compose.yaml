@@ -1,0 +1,72 @@
+# Intella — self-hosted single-user deployment (T0.12 · R22).
+#
+# `docker compose up` runs the one-shot `setup` (WAL + migrate + seed + open a
+# pairing window + print PIN & QR) and then the always-on API. Data and backups
+# live in a bind-mounted host directory so `docker compose down` never loses
+# anything. No ports face the public internet — the API binds to loopback and is
+# reached over Tailscale (T0.6 / T0.13); Tailscale Serve fronts it with HTTPS.
+#
+# Before first run, copy .env.example → .env and set at least:
+#   INTELLA_DATA_DIR       absolute host path for data+backups (e.g. ~/Documents/Intella, expanded)
+#   INTELLA_PUBLIC_BASE_URL  the tailnet HTTPS name the phone dials (embedded in the pairing QR)
+# See docs/Intella_Deployment_Runbook.md.
+
+name: intella
+
+x-api-image: &api-image
+  build:
+    context: .
+    target: runtime
+  image: intella/api:latest
+
+x-api-env: &api-env
+  # The DB + backups live under the bind-mounted /data (see volumes below).
+  DATABASE_URL: "file:/data/intella.db"
+  INTELLA_BACKUP_DIR: "/data/backups"
+
+services:
+  # One-shot first-run setup. Exits 0 on success; the API waits for it. Re-run
+  # any time (e.g. to pair another device) with `docker compose run --rm setup`.
+  setup:
+    <<: *api-image
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *api-env
+    volumes:
+      - ${INTELLA_DATA_DIR:-./data}:/data
+    command: ["pnpm", "setup"]
+    restart: "no"
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *api-env
+      # Bind inside the container to all interfaces so the host can reach it…
+      API_HOST: "0.0.0.0"
+      API_PORT: "8787"
+    volumes:
+      - ${INTELLA_DATA_DIR:-./data}:/data
+    ports:
+      # …but publish ONLY to host loopback. Not internet-exposed; Tailscale Serve
+      # (running on the host) proxies the tailnet HTTPS name to 127.0.0.1:8787.
+      - "127.0.0.1:8787:8787"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  # Optional: a local model for routine LLM work (Phase 2+, degraded-mode ladder).
+  # Uncomment and set LOCAL_MODEL_ENDPOINT=http://ollama:11434 in .env to enable.
+  # ollama:
+  #   image: ollama/ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama:/root/.ollama
+
+# volumes:
+#   ollama:

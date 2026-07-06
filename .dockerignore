@@ -1,0 +1,29 @@
+# Build context hygiene — keep the image lean and reproducible.
+node_modules
+**/node_modules
+.git
+.pnpm-store
+dist
+build
+out
+**/*.tsbuildinfo
+
+# Local data & secrets never belong in an image.
+.env
+.env.*
+!.env.example
+backups
+.backup-key
+*.db
+*.db-shm
+*.db-wal
+prisma/*.db
+prisma/*.db-shm
+prisma/*.db-wal
+data
+
+# Editor / OS cruft
+.vscode
+.idea
+.DS_Store
+*.log
