@@ -101,52 +101,9 @@ export interface paths {
             cookie?: never;
         };
         /** Read diet profile */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Diet profile */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["DietProfile"];
-                    };
-                };
-            };
-        };
+        get: operations["getDietProfile"];
         /** Upsert diet profile (allergies are hard excludes) */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["DietProfileInput"];
-                };
-            };
-            responses: {
-                /** @description Updated diet profile */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["DietProfile"];
-                    };
-                };
-                422: components["responses"]["ValidationError"];
-            };
-        };
+        put: operations["putDietProfile"];
         post?: never;
         delete?: never;
         options?: never;
@@ -162,52 +119,9 @@ export interface paths {
             cookie?: never;
         };
         /** Read training profile */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Training profile */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["TrainingProfile"];
-                    };
-                };
-            };
-        };
+        get: operations["getTrainingProfile"];
         /** Upsert training profile (injuries are hard constraints) */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["TrainingProfileInput"];
-                };
-            };
-            responses: {
-                /** @description Updated training profile */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["TrainingProfile"];
-                    };
-                };
-                422: components["responses"]["ValidationError"];
-            };
-        };
+        put: operations["putTrainingProfile"];
         post?: never;
         delete?: never;
         options?: never;
@@ -222,53 +136,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List goals */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Goals */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Goal"][];
-                    };
-                };
-            };
+        /** List goals (active first, ordered by priority) */
+        get: operations["listGoals"];
+        /**
+         * Create or update a goal (upsert by id)
+         * @description Upserts a single structured goal (R4). With an `id` it updates that goal; without one it creates a new goal. Multiple goals are supported by calling this repeatedly, each carrying its own `priority` (R14); a goal is retired by setting its `status` to paused/abandoned rather than a hard delete.
+         */
+        put: operations["putGoal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        /** Set / update active goal */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["GoalInput"];
-                };
-            };
-            responses: {
-                /** @description Updated goal */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Goal"];
-                    };
-                };
-                422: components["responses"]["ValidationError"];
-            };
-        };
+        /**
+         * Provider API-key status (masked — never returns the secret)
+         * @description Reports whether each provider key (Anthropic, Spoonacular) is set, with only a masked last-4 preview. The plaintext key is encrypted at rest and never returned after save (T1.3).
+         */
+        get: operations["getApiKeyStatus"];
+        /**
+         * Set / replace provider API keys
+         * @description Stores the supplied provider key(s), encrypted at rest. Only provided, non-empty fields are updated. Returns the masked status — never the plaintext (T1.3).
+         */
+        put: operations["putApiKeys"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1335,9 +1233,9 @@ export interface components {
             activityLevel: "sedentary" | "light" | "moderate" | "very_active" | "athlete";
         };
         Goal: {
-            id?: string;
+            id: string;
             /** @enum {string} */
-            type?: "build_muscle" | "lose_fat" | "get_stronger" | "general_health";
+            type: "build_muscle" | "lose_fat" | "get_stronger" | "general_health";
             /**
              * @description Structured target shape; engines read this, not free text (R4).
              * @default outcome
@@ -1345,38 +1243,45 @@ export interface components {
              */
             targetKind: "rate" | "absolute" | "outcome";
             /** @description e.g. -0.5 for a 0.5 kg/week cut (R4). */
-            targetValue?: number | null;
+            targetValue: number | null;
             /**
              * @description Unit for targetValue (R4).
              * @enum {string|null}
              */
-            targetUnit?: "kg_per_week" | "kg" | "pct_bodyfat" | "reps" | "kg_1rm" | "none" | null;
+            targetUnit: "kg_per_week" | "kg" | "pct_bodyfat" | "reps" | "kg_1rm" | "none" | null;
             /** @description Human phrasing only (display); not read by engines (R4). */
-            note?: string | null;
+            note: string | null;
             /**
              * @description Multi-goal conflict ordering (R14).
              * @default 1
              */
             priority: number;
             /** Format: date-time */
-            startDate?: string;
+            startDate: string;
             /** @enum {string} */
-            status?: "active" | "paused" | "achieved" | "abandoned";
+            status: "active" | "paused" | "achieved" | "abandoned";
         };
         GoalInput: {
+            /** @description When present, update this goal; when absent, create a new one (upsert). */
+            id?: string;
             /** @enum {string} */
             type: "build_muscle" | "lose_fat" | "get_stronger" | "general_health";
             /**
-             * @default outcome
+             * @description Structured target shape (R4). Optional on input; server defaults to "outcome".
              * @enum {string}
              */
-            targetKind: "rate" | "absolute" | "outcome";
+            targetKind?: "rate" | "absolute" | "outcome";
             targetValue?: number | null;
             /** @enum {string|null} */
             targetUnit?: "kg_per_week" | "kg" | "pct_bodyfat" | "reps" | "kg_1rm" | "none" | null;
             note?: string;
-            /** @default 1 */
-            priority: number;
+            /** @description Multi-goal conflict ordering (R14). Optional on input; server defaults to 1. */
+            priority?: number;
+            /**
+             * @description Retire a goal by setting this (soft delete); defaults to active.
+             * @enum {string}
+             */
+            status?: "active" | "paused" | "achieved" | "abandoned";
         };
         /** @description Optional onboarding "current strength" capture; seeds week-1 loads via e1RM (R9). */
         BaselineLift: {
@@ -1419,7 +1324,8 @@ export interface components {
             cookingSkill?: string | null;
             effortMax?: number | null;
             kcal?: number | null;
-            macros?: components["schemas"]["Macros"];
+            /** @description Engine-computed per-day macros; null until the nutrition engine runs (Phase 3). */
+            macros?: components["schemas"]["Macros"] | null;
             /** @description Estimated weekly food budget. SOFT constraint — the validator warns when estimated cost exceeds it but never rejects a plan (R12). */
             budgetWeekly?: number | null;
             mealsPerDay?: number;
@@ -1444,6 +1350,25 @@ export interface components {
             batchCooking?: boolean;
             /** @enum {string} */
             variety?: "low" | "moderate" | "high";
+        };
+        /** @description Masked state of one provider key — never carries the plaintext (T1.3). */
+        ApiKeyState: {
+            /** @description Whether a key is stored for this provider. */
+            set: boolean;
+            /** @description Last 4 characters for a masked preview; null when unset. */
+            last4?: string | null;
+        };
+        /** @description Masked status of every provider key. The secret is never returned (T1.3). */
+        ApiKeyStatus: {
+            anthropic: components["schemas"]["ApiKeyState"];
+            spoonacular: components["schemas"]["ApiKeyState"];
+        };
+        /** @description Set one or both provider keys. Only provided, non-empty fields are written; omit a field to leave that key unchanged. */
+        ApiKeysInput: {
+            /** @description Anthropic API key (encrypted at rest; never returned after save). */
+            anthropic?: string;
+            /** @description Spoonacular API key (encrypted at rest; never returned after save). */
+            spoonacular?: string;
         };
         Exercise: {
             id?: string;
@@ -1770,6 +1695,197 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Profile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getDietProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Diet profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putDietProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DietProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Updated diet profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getTrainingProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Training profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putTrainingProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Updated training profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrainingProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    listGoals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    putGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalInput"];
+            };
+        };
+        responses: {
+            /** @description Updated goal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getApiKeyStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Masked key status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    putApiKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiKeysInput"];
+            };
+        };
+        responses: {
+            /** @description Masked key status after the update */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyStatus"];
                 };
             };
             401: components["responses"]["Unauthorized"];

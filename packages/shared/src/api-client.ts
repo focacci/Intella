@@ -5,6 +5,16 @@ import type { components, paths } from "./generated/openapi.js";
 export type HealthResponse = components["schemas"]["HealthResponse"];
 export type Profile = components["schemas"]["Profile"];
 export type ProfileInput = components["schemas"]["ProfileInput"];
+export type DietProfile = components["schemas"]["DietProfile"];
+export type DietProfileInput = components["schemas"]["DietProfileInput"];
+export type TrainingProfile = components["schemas"]["TrainingProfile"];
+export type TrainingProfileInput = components["schemas"]["TrainingProfileInput"];
+export type Injury = components["schemas"]["Injury"];
+export type BaselineLift = components["schemas"]["BaselineLift"];
+export type Goal = components["schemas"]["Goal"];
+export type GoalInput = components["schemas"]["GoalInput"];
+export type ApiKeyStatus = components["schemas"]["ApiKeyStatus"];
+export type ApiKeysInput = components["schemas"]["ApiKeysInput"];
 export type SystemStatus = components["schemas"]["SystemStatus"];
 export type ApiToken = components["schemas"]["ApiToken"];
 export type ApiTokenInput = components["schemas"]["ApiTokenInput"];
@@ -67,6 +77,48 @@ export function createIntellaClient(options: IntellaClientOptions = {}) {
         })
       );
     },
+    /** Null when no diet profile has been saved yet (404). */
+    async getDietProfile() {
+      return unwrapOrNull<DietProfile>(await client.GET("/diet-profile"));
+    },
+    async putDietProfile(dietProfile: DietProfileInput) {
+      return unwrap<DietProfile>(
+        await client.PUT("/diet-profile", {
+          body: dietProfile
+        })
+      );
+    },
+    /** Null when no training profile has been saved yet (404). */
+    async getTrainingProfile() {
+      return unwrapOrNull<TrainingProfile>(await client.GET("/training-profile"));
+    },
+    async putTrainingProfile(trainingProfile: TrainingProfileInput) {
+      return unwrap<TrainingProfile>(
+        await client.PUT("/training-profile", {
+          body: trainingProfile
+        })
+      );
+    },
+    async getGoals() {
+      return unwrap<Goal[]>(await client.GET("/goals"));
+    },
+    async putGoal(goal: GoalInput) {
+      return unwrap<Goal>(
+        await client.PUT("/goals", {
+          body: goal
+        })
+      );
+    },
+    async getApiKeyStatus() {
+      return unwrap<ApiKeyStatus>(await client.GET("/settings/api-keys"));
+    },
+    async putApiKeys(input: ApiKeysInput) {
+      return unwrap<ApiKeyStatus>(
+        await client.PUT("/settings/api-keys", {
+          body: input
+        })
+      );
+    },
     async listApiTokens() {
       return unwrap<ApiToken[]>(await client.GET("/auth/tokens"));
     },
@@ -114,6 +166,18 @@ function unwrapEmpty(result: { error?: unknown; response: Response }): void {
   if (result.error) {
     throw new IntellaApiError(result.response.status, result.error);
   }
+}
+
+/**
+ * For GETs where "not created yet" is a normal state: a 404 returns null, every
+ * other error throws. Lets a caller distinguish "no row" from a real failure.
+ */
+function unwrapOrNull<T>(result: ApiResult<T>): T | null {
+  if (result.response.status === 404) {
+    return null;
+  }
+
+  return unwrap<T>(result);
 }
 
 function readErrorMessage(body: unknown, status: number) {

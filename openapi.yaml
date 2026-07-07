@@ -107,6 +107,7 @@ paths:
   /diet-profile:
     get:
       tags: [Profile]
+      operationId: getDietProfile
       summary: Read diet profile
       responses:
         "200":
@@ -114,8 +115,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DietProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [Profile]
+      operationId: putDietProfile
       summary: Upsert diet profile (allergies are hard excludes)
       requestBody:
         required: true
@@ -128,11 +132,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/DietProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/ValidationError" }
 
   /training-profile:
     get:
       tags: [Profile]
+      operationId: getTrainingProfile
       summary: Read training profile
       responses:
         "200":
@@ -140,8 +146,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TrainingProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [Profile]
+      operationId: putTrainingProfile
       summary: Upsert training profile (injuries are hard constraints)
       requestBody:
         required: true
@@ -154,12 +163,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TrainingProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/ValidationError" }
 
   /goals:
     get:
       tags: [Profile]
-      summary: List goals
+      operationId: listGoals
+      summary: List goals (active first, ordered by priority)
       responses:
         "200":
           description: Goals
@@ -168,9 +179,16 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Goal" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
     put:
       tags: [Profile]
-      summary: Set / update active goal
+      operationId: putGoal
+      summary: Create or update a goal (upsert by id)
+      description: >
+        Upserts a single structured goal (R4). With an `id` it updates that goal;
+        without one it creates a new goal. Multiple goals are supported by calling
+        this repeatedly, each carrying its own `priority` (R14); a goal is retired
+        by setting its `status` to paused/abandoned rather than a hard delete.
       requestBody:
         required: true
         content:
@@ -182,6 +200,47 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Goal" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  # ----------------------------------------------------------------- Settings
+  /settings/api-keys:
+    get:
+      tags: [Profile]
+      operationId: getApiKeyStatus
+      summary: Provider API-key status (masked — never returns the secret)
+      description: >
+        Reports whether each provider key (Anthropic, Spoonacular) is set, with
+        only a masked last-4 preview. The plaintext key is encrypted at rest and
+        never returned after save (T1.3).
+      responses:
+        "200":
+          description: Masked key status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiKeyStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [Profile]
+      operationId: putApiKeys
+      summary: Set / replace provider API keys
+      description: >
+        Stores the supplied provider key(s), encrypted at rest. Only provided,
+        non-empty fields are updated. Returns the masked status — never the
+        plaintext (T1.3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApiKeysInput" }
+      responses:
+        "200":
+          description: Masked key status after the update
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiKeyStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/ValidationError" }
 
   # ---------------------------------------------------------------- Training
@@ -909,6 +968,8 @@ components:
 
     Goal:
       type: object
+      required:
+        [id, type, targetKind, targetValue, targetUnit, note, priority, startDate, status]
       properties:
         id: { type: string }
         type:
@@ -941,16 +1002,28 @@ components:
       type: object
       required: [type]
       properties:
+        id:
+          type: string
+          description: When present, update this goal; when absent, create a new one (upsert).
         type:
           { type: string, enum: [build_muscle, lose_fat, get_stronger, general_health] }
-        targetKind: { type: string, enum: [rate, absolute, outcome], default: outcome }
+        targetKind:
+          type: string
+          enum: [rate, absolute, outcome]
+          description: Structured target shape (R4). Optional on input; server defaults to "outcome".
         targetValue: { type: number, nullable: true }
         targetUnit:
           type: string
           enum: [kg_per_week, kg, pct_bodyfat, reps, kg_1rm, none]
           nullable: true
         note: { type: string }
-        priority: { type: integer, default: 1 }
+        priority:
+          type: integer
+          description: Multi-goal conflict ordering (R14). Optional on input; server defaults to 1.
+        status:
+          type: string
+          enum: [active, paused, achieved, abandoned]
+          description: Retire a goal by setting this (soft delete); defaults to active.
 
     BaselineLift:
       type: object
@@ -1013,7 +1086,10 @@ components:
         cookingSkill: { type: string, nullable: true }
         effortMax: { type: integer, nullable: true }
         kcal: { type: integer, nullable: true }
-        macros: { $ref: "#/components/schemas/Macros" }
+        macros:
+          oneOf: [{ $ref: "#/components/schemas/Macros" }]
+          nullable: true
+          description: Engine-computed per-day macros; null until the nutrition engine runs (Phase 3).
         budgetWeekly:
           type: number
           nullable: true
@@ -1041,6 +1117,38 @@ components:
         snacksPerDay: { type: integer }
         batchCooking: { type: boolean }
         variety: { type: string, enum: [low, moderate, high] }
+
+    ApiKeyState:
+      type: object
+      description: Masked state of one provider key — never carries the plaintext (T1.3).
+      required: [set]
+      properties:
+        set: { type: boolean, description: Whether a key is stored for this provider. }
+        last4:
+          type: string
+          nullable: true
+          description: Last 4 characters for a masked preview; null when unset.
+    ApiKeyStatus:
+      type: object
+      description: Masked status of every provider key. The secret is never returned (T1.3).
+      required: [anthropic, spoonacular]
+      properties:
+        anthropic: { $ref: "#/components/schemas/ApiKeyState" }
+        spoonacular: { $ref: "#/components/schemas/ApiKeyState" }
+    ApiKeysInput:
+      type: object
+      description: >
+        Set one or both provider keys. Only provided, non-empty fields are
+        written; omit a field to leave that key unchanged.
+      properties:
+        anthropic:
+          type: string
+          minLength: 1
+          description: Anthropic API key (encrypted at rest; never returned after save).
+        spoonacular:
+          type: string
+          minLength: 1
+          description: Spoonacular API key (encrypted at rest; never returned after save).
 
     Exercise:
       type: object

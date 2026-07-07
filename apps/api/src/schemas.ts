@@ -29,6 +29,172 @@ export const profileResponseSchema = z.object({
   activityLevel: z.enum(["sedentary", "light", "moderate", "very_active", "athlete"])
 });
 
+// ---------------------------------------------------------------------------
+// Goals (R4 structured target + R14 priority)
+// ---------------------------------------------------------------------------
+
+const goalTypeEnum = z.enum([
+  "build_muscle",
+  "lose_fat",
+  "get_stronger",
+  "general_health"
+]);
+const targetKindEnum = z.enum(["rate", "absolute", "outcome"]);
+const targetUnitEnum = z.enum([
+  "kg_per_week",
+  "kg",
+  "pct_bodyfat",
+  "reps",
+  "kg_1rm",
+  "none"
+]);
+const goalStatusEnum = z.enum(["active", "paused", "achieved", "abandoned"]);
+
+export const goalInputSchema = z
+  .object({
+    // Absent id → create; present id → update that goal (upsert).
+    id: z.string().min(1).optional(),
+    type: goalTypeEnum,
+    targetKind: targetKindEnum.default("outcome"),
+    targetValue: z.number().nullable().optional(),
+    targetUnit: targetUnitEnum.nullable().optional(),
+    note: z.string().optional(),
+    priority: z.number().int().min(1).default(1),
+    status: goalStatusEnum.optional()
+  })
+  .strict();
+
+export const goalResponseSchema = z.object({
+  id: z.string(),
+  type: goalTypeEnum,
+  targetKind: targetKindEnum,
+  targetValue: z.number().nullable(),
+  targetUnit: targetUnitEnum.nullable(),
+  note: z.string().nullable(),
+  priority: z.number().int(),
+  startDate: z.string().datetime({ offset: true }),
+  status: goalStatusEnum
+});
+
+export const goalListSchema = z.array(goalResponseSchema);
+
+// ---------------------------------------------------------------------------
+// Training profile (injuries + baseline lifts are the HARD/optional bits, R9)
+// ---------------------------------------------------------------------------
+
+const experienceEnum = z.enum(["beginner", "intermediate", "advanced"]);
+
+export const injurySchema = z.object({
+  area: z.string().min(1),
+  note: z.string().optional(),
+  avoidPatterns: z.array(z.string()).default([])
+});
+
+// Optional starting-strength capture (R9). Needs a movement reference (pattern
+// or a specific exercise) plus an estimated working set to seed week-1 loads.
+export const baselineLiftSchema = z
+  .object({
+    pattern: z.string().min(1).optional(),
+    exerciseId: z.string().min(1).optional(),
+    estWeight: z.number().positive(), // kg, metric-canonical
+    estReps: z.number().int().min(1)
+  })
+  .refine((lift) => Boolean(lift.pattern) || Boolean(lift.exerciseId), {
+    message: "A baseline lift needs a pattern or an exerciseId"
+  });
+
+export const trainingProfileInputSchema = z
+  .object({
+    experience: experienceEnum,
+    daysPerWeek: z.number().int().min(1).max(7),
+    sessionMins: z.number().int().positive().max(600),
+    equipment: z.array(z.string().min(1)),
+    injuries: z.array(injurySchema).default([]),
+    baselineLifts: z.array(baselineLiftSchema).default([])
+  })
+  .strict();
+
+export const trainingProfileResponseSchema = z.object({
+  id: z.string(),
+  experience: experienceEnum,
+  daysPerWeek: z.number().int(),
+  sessionMins: z.number().int(),
+  equipment: z.array(z.string()),
+  injuries: z.array(injurySchema),
+  baselineLifts: z.array(baselineLiftSchema)
+});
+
+// ---------------------------------------------------------------------------
+// Diet profile (allergies are HARD excludes; budget is SOFT, R12)
+// ---------------------------------------------------------------------------
+
+const cookingSkillEnum = z.enum(["beginner", "intermediate", "advanced"]);
+const varietyEnum = z.enum(["low", "moderate", "high"]);
+
+export const macrosSchema = z.object({
+  kcal: z.number().int(),
+  proteinG: z.number(),
+  carbsG: z.number(),
+  fatG: z.number()
+});
+
+// kcal/macros are engine-computed (Phase 3), never client input.
+export const dietProfileInputSchema = z
+  .object({
+    pattern: z.string().optional(),
+    restrictions: z.array(z.string()).optional(),
+    allergies: z.array(z.string()).optional(),
+    dislikes: z.array(z.string()).optional(),
+    cuisines: z.array(z.string()).optional(),
+    cookingSkill: cookingSkillEnum.optional(),
+    effortMax: z.number().int().min(1).max(5).optional(),
+    budgetWeekly: z.number().nonnegative().optional(),
+    mealsPerDay: z.number().int().min(1).max(12).optional(),
+    snacksPerDay: z.number().int().min(0).max(12).optional(),
+    batchCooking: z.boolean().optional(),
+    variety: varietyEnum.optional()
+  })
+  .strict();
+
+export const dietProfileResponseSchema = z.object({
+  id: z.string(),
+  pattern: z.string().nullable(),
+  restrictions: z.array(z.string()),
+  allergies: z.array(z.string()),
+  dislikes: z.array(z.string()),
+  cuisines: z.array(z.string()),
+  cookingSkill: cookingSkillEnum.nullable(),
+  effortMax: z.number().int().nullable(),
+  kcal: z.number().int().nullable(),
+  macros: macrosSchema.nullable(),
+  budgetWeekly: z.number().nullable(),
+  mealsPerDay: z.number().int(),
+  snacksPerDay: z.number().int(),
+  batchCooking: z.boolean(),
+  variety: varietyEnum
+});
+
+// ---------------------------------------------------------------------------
+// Provider API keys (T1.3) — stored encrypted, only ever returned masked.
+// ---------------------------------------------------------------------------
+
+const apiKeyStateSchema = z.object({
+  set: z.boolean(),
+  last4: z.string().nullable()
+});
+
+export const apiKeyStatusSchema = z.object({
+  anthropic: apiKeyStateSchema,
+  spoonacular: apiKeyStateSchema
+});
+
+export const apiKeysInputSchema = z
+  .object({
+    anthropic: z.string().min(1).optional(),
+    spoonacular: z.string().min(1).optional()
+  })
+  .strict();
+
 export const systemStatusSchema = z.object({
   mode: z.enum(["full", "rules_local", "rules_only"]),
   llm: z.enum(["up", "down"]),
@@ -72,6 +238,16 @@ export const pairResultSchema = z.object({
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 export type ProfileResponse = z.infer<typeof profileResponseSchema>;
+export type GoalInput = z.infer<typeof goalInputSchema>;
+export type GoalResponse = z.infer<typeof goalResponseSchema>;
+export type TrainingProfileInput = z.infer<typeof trainingProfileInputSchema>;
+export type TrainingProfileResponse = z.infer<typeof trainingProfileResponseSchema>;
+export type Injury = z.infer<typeof injurySchema>;
+export type BaselineLift = z.infer<typeof baselineLiftSchema>;
+export type DietProfileInput = z.infer<typeof dietProfileInputSchema>;
+export type DietProfileResponse = z.infer<typeof dietProfileResponseSchema>;
+export type ApiKeyStatus = z.infer<typeof apiKeyStatusSchema>;
+export type ApiKeysInput = z.infer<typeof apiKeysInputSchema>;
 export type SystemStatus = z.infer<typeof systemStatusSchema>;
 export type ApiTokenInput = z.infer<typeof apiTokenInputSchema>;
 export type ApiTokenResponse = z.infer<typeof apiTokenResponseSchema>;

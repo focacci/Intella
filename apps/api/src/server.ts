@@ -6,20 +6,33 @@ import type { ZodError } from "zod";
 import { createBearerAuthHook } from "./auth.js";
 import { config, type ApiConfig } from "./config.js";
 import { createPrismaClient, type IntellaPrismaClient } from "./db.js";
+import { getDietProfile, putDietProfile } from "./diet-profile.js";
+import { listGoals, putGoal } from "./goals.js";
 import { redeemPairingPin } from "./pairing.js";
 import { getProfile, putProfile } from "./profile.js";
 import {
+  apiKeysInputSchema,
+  apiKeyStatusSchema,
   apiTokenInputSchema,
   apiTokenListSchema,
+  dietProfileInputSchema,
+  dietProfileResponseSchema,
+  goalInputSchema,
+  goalListSchema,
+  goalResponseSchema,
   healthResponseSchema,
   mintedApiTokenSchema,
   pairQuerySchema,
   pairResultSchema,
   profileInputSchema,
   profileResponseSchema,
-  systemStatusSchema
+  systemStatusSchema,
+  trainingProfileInputSchema,
+  trainingProfileResponseSchema
 } from "./schemas.js";
+import { getApiKeyStatus, putApiKeys } from "./settings.js";
 import { buildSystemStatus, type SystemStatusOverrides } from "./system-status.js";
+import { getTrainingProfile, putTrainingProfile } from "./training-profile.js";
 import { listTokens, mintToken, revokeToken } from "./tokens.js";
 
 export type BuildServerOptions = {
@@ -71,6 +84,80 @@ export function buildServer(options: BuildServerOptions = {}) {
     }
 
     return profileResponseSchema.parse(await putProfile(prisma, parsed.data));
+  });
+
+  app.get("/diet-profile", async (_request, reply) => {
+    const dietProfile = await getDietProfile(prisma);
+
+    if (!dietProfile) {
+      return sendNotFound(reply, "No diet profile yet");
+    }
+
+    return dietProfileResponseSchema.parse(dietProfile);
+  });
+
+  app.put("/diet-profile", async (request, reply) => {
+    const parsed = dietProfileInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    return dietProfileResponseSchema.parse(await putDietProfile(prisma, parsed.data));
+  });
+
+  app.get("/training-profile", async (_request, reply) => {
+    const trainingProfile = await getTrainingProfile(prisma);
+
+    if (!trainingProfile) {
+      return sendNotFound(reply, "No training profile yet");
+    }
+
+    return trainingProfileResponseSchema.parse(trainingProfile);
+  });
+
+  app.put("/training-profile", async (request, reply) => {
+    const parsed = trainingProfileInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    return trainingProfileResponseSchema.parse(
+      await putTrainingProfile(prisma, parsed.data)
+    );
+  });
+
+  app.get("/goals", async () => goalListSchema.parse(await listGoals(prisma)));
+
+  app.put("/goals", async (request, reply) => {
+    const parsed = goalInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    const result = await putGoal(prisma, parsed.data);
+
+    if (!result.ok) {
+      return sendNotFound(reply, "No goal with that id");
+    }
+
+    return goalResponseSchema.parse(result.goal);
+  });
+
+  app.get("/settings/api-keys", async () =>
+    apiKeyStatusSchema.parse(await getApiKeyStatus(prisma))
+  );
+
+  app.put("/settings/api-keys", async (request, reply) => {
+    const parsed = apiKeysInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    return apiKeyStatusSchema.parse(await putApiKeys(prisma, parsed.data, apiConfig));
   });
 
   app.get("/auth/tokens", async () =>
@@ -143,6 +230,13 @@ function sendPairForbidden(reply: FastifyReply) {
   return reply.code(403).send({
     code: "pairing_closed",
     message: "No open pairing window, or invalid/expired PIN"
+  });
+}
+
+function sendNotFound(reply: FastifyReply, message: string) {
+  return reply.code(404).send({
+    code: "not_found",
+    message
   });
 }
 

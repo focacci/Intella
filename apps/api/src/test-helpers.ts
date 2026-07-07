@@ -70,3 +70,53 @@ export async function closeAppAndDatabase(
   await app.close();
   await database.cleanup();
 }
+
+type InjectMethod =
+  | "DELETE"
+  | "GET"
+  | "HEAD"
+  | "PATCH"
+  | "POST"
+  | "PUT"
+  | "OPTIONS";
+
+/**
+ * A `fetch` that routes requests into a Fastify instance via `app.inject`,
+ * letting the generated OpenAPI client exercise real routes in-process (no
+ * socket). Mirrors the shape openapi-fetch expects back.
+ */
+export function createInjectFetch(app: FastifyInstance) {
+  return async function injectFetch(request: Request) {
+    const url = new URL(request.url);
+    const payload = await request.text();
+    const injectOptions = {
+      method: request.method.toUpperCase() as InjectMethod,
+      url: `${url.pathname}${url.search}`,
+      headers: Object.fromEntries(request.headers.entries())
+    };
+    const response = await app.inject(
+      payload ? { ...injectOptions, payload } : injectOptions
+    );
+
+    return new Response(response.body, {
+      status: response.statusCode,
+      headers: toResponseHeaders(response.headers)
+    });
+  };
+}
+
+function toResponseHeaders(headers: Record<string, unknown>) {
+  const output = new Headers();
+
+  for (const [key, value] of Object.entries(headers)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        output.append(key, String(item));
+      }
+    } else if (value !== undefined) {
+      output.set(key, String(value));
+    }
+  }
+
+  return output;
+}
