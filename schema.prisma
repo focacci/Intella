@@ -520,3 +520,17 @@ model BackupRun {
 
   @@index([status, startedAt])
 }
+
+/// Provider API keys entered from Settings (T1.3). Stored ENCRYPTED at rest
+/// (AES-256-GCM with the app's OS-keystore-backed key); the plaintext is
+/// returned to a caller exactly never — the web only ever sees a masked `last4`.
+/// Engines decrypt it server-side to call Anthropic (Phase 2) / Spoonacular
+/// (Phase 3). Local secret state — deliberately NOT syncable (no R3 quartet); it
+/// must never replicate to a paired device, same posture as `ApiToken`.
+model ProviderCredential {
+  provider   String   @id // "anthropic" | "spoonacular"
+  ciphertext String // base64 AES-256-GCM blob (iv || tag || ciphertext)
+  last4      String // last 4 chars of the key, for a masked preview only
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
