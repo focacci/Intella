@@ -7,21 +7,24 @@ import {
   RouterProvider,
   useRouterState
 } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import {
   Apple,
   CalendarDays,
   Dumbbell,
   HeartPulse,
   Home,
-  Save,
   Settings,
   ShoppingBasket,
+  Sparkles,
   type LucideIcon
 } from "lucide-react";
 
 import { Button } from "./components/ui/button.js";
+import { OnboardingWizard } from "./onboarding/OnboardingWizard.js";
+import { SettingsScreen } from "./settings/SettingsScreen.js";
+import { clearFirstPlanHandoff, isFirstPlanHandoff } from "./lib/first-plan.js";
 import { intellaClient } from "./lib/api.js";
 import { cn } from "./lib/utils.js";
 
@@ -107,24 +110,21 @@ function AppShell() {
   );
 }
 
-function OnboardingScreen() {
-  return (
-    <ScreenFrame title="Onboarding" eyebrow="Profile">
-      <div className="grid gap-3 md:grid-cols-5">
-        {["Physiology", "Goals", "Training", "Nutrition", "Review"].map(
-          (step, index) => (
-            <div key={step} className="rounded-md border border-border bg-panel p-4">
-              <div className="text-sm text-muted-foreground">Step {index + 1}</div>
-              <div className="mt-2 font-medium">{step}</div>
-            </div>
-          )
-        )}
-      </div>
-    </ScreenFrame>
-  );
-}
-
 function TodayScreen() {
+  // Onboarding hands off here with a one-time "generating your first plan" flag.
+  const [handoff, setHandoff] = useState(() => isFirstPlanHandoff());
+
+  if (handoff) {
+    return (
+      <FirstPlanHandoff
+        onDismiss={() => {
+          clearFirstPlanHandoff();
+          setHandoff(false);
+        }}
+      />
+    );
+  }
+
   return (
     <ScreenFrame title="Today" eyebrow="Dashboard">
       <div className="grid gap-4 md:grid-cols-3">
@@ -133,6 +133,37 @@ function TodayScreen() {
         <MetricPanel icon={ShoppingBasket} label="Grocery" value="Ready" />
       </div>
     </ScreenFrame>
+  );
+}
+
+function FirstPlanHandoff({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <section className="mx-auto grid w-full max-w-2xl gap-6 py-10 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+        <Sparkles className="h-6 w-6 text-primary" />
+      </div>
+      <div className="grid gap-2">
+        <h1 className="text-3xl font-semibold">Generating your first plan</h1>
+        <p className="text-sm text-muted-foreground">
+          Your profile, goal, training, and nutrition are saved. Your personalized
+          program and meal plan generate here once the training and nutrition engines
+          come online (Phase 2–3). Until then, everything you entered is captured and
+          editable in Settings.
+        </p>
+      </div>
+      <div className="flex justify-center gap-3">
+        <Button onClick={onDismiss}>
+          <Home className="h-4 w-4" />
+          Go to Today
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/settings">
+            <Settings className="h-4 w-4" />
+            Review in Settings
+          </Link>
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -170,65 +201,6 @@ function GroceryScreen() {
         {["Produce", "Protein", "Pantry", "Dairy"].map((category) => (
           <Row key={category} label={category} value="0 checked" />
         ))}
-      </div>
-    </ScreenFrame>
-  );
-}
-
-function SettingsScreen() {
-  const queryClient = useQueryClient();
-  const profileQuery = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => intellaClient.getProfile(),
-    retry: 1
-  });
-  const systemStatusQuery = useQuery({
-    queryKey: ["system-status"],
-    queryFn: () => intellaClient.getSystemStatus(),
-    retry: 1
-  });
-  const saveProfile = useMutation({
-    mutationFn: () =>
-      intellaClient.putProfile({
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-        unitSystem: "metric",
-        activityLevel: "moderate"
-      }),
-    onSuccess: (profile) => {
-      queryClient.setQueryData(["profile"], profile);
-    }
-  });
-
-  return (
-    <ScreenFrame title="Settings" eyebrow="System">
-      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="rounded-md border border-border bg-panel p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="font-medium">Profile</div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {profileQuery.data
-                  ? profileQuery.data.timezone
-                  : profileQuery.isPending
-                    ? "Loading"
-                    : "Unavailable"}
-              </div>
-            </div>
-            <Button
-              onClick={() => saveProfile.mutate()}
-              disabled={saveProfile.isPending}
-            >
-              <Save className="h-4 w-4" />
-              Save
-            </Button>
-          </div>
-        </div>
-        <div className="rounded-md border border-border bg-panel p-4">
-          <div className="font-medium">Mode</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            {systemStatusQuery.data?.mode ?? "Unavailable"}
-          </div>
-        </div>
       </div>
     </ScreenFrame>
   );
@@ -297,7 +269,7 @@ const todayRoute = createRoute({
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/onboarding",
-  component: OnboardingScreen
+  component: OnboardingWizard
 });
 
 const workoutRoute = createRoute({
