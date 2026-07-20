@@ -72,9 +72,15 @@ export function buildServer(options: BuildServerOptions = {}) {
     )
   );
 
-  app.get("/profile", async () =>
-    profileResponseSchema.parse(await getProfile(prisma))
-  );
+  app.get("/profile", async (_request, reply) => {
+    const profile = await getProfile(prisma);
+
+    if (!profile) {
+      return sendNotFound(reply, "No profile yet");
+    }
+
+    return profileResponseSchema.parse(profile);
+  });
 
   app.put("/profile", async (request, reply) => {
     const parsed = profileInputSchema.safeParse(request.body);

@@ -131,8 +131,20 @@ export const trainingProfileResponseSchema = z.object({
 const cookingSkillEnum = z.enum(["beginner", "intermediate", "advanced"]);
 const varietyEnum = z.enum(["low", "moderate", "high"]);
 
+// Two deliberately different shapes (see openapi.yaml):
+//   macrosSchema     — carries kcal; for self-contained blobs (Recipe.macrosPerServ).
+//   macroSplitSchema — no kcal; for DietProfile.macros, whose per-day energy
+//                      target lives in the sibling DietProfile.kcal column.
+// Keeping kcal out of the diet-profile blob avoids two sources of truth for
+// the same number once the Phase 3 nutrition engine starts writing it.
 export const macrosSchema = z.object({
   kcal: z.number().int(),
+  proteinG: z.number(),
+  carbsG: z.number(),
+  fatG: z.number()
+});
+
+export const macroSplitSchema = z.object({
   proteinG: z.number(),
   carbsG: z.number(),
   fatG: z.number()
@@ -166,7 +178,7 @@ export const dietProfileResponseSchema = z.object({
   cookingSkill: cookingSkillEnum.nullable(),
   effortMax: z.number().int().nullable(),
   kcal: z.number().int().nullable(),
-  macros: macrosSchema.nullable(),
+  macros: macroSplitSchema.nullable(),
   budgetWeekly: z.number().nullable(),
   mealsPerDay: z.number().int(),
   snacksPerDay: z.number().int(),

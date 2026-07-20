@@ -120,8 +120,8 @@ model DietProfile {
   cuisines     String    @default("[]") // Json string[]  — preferred
   cookingSkill String? // "beginner" | "intermediate" | "advanced"
   effortMax    Int? // effort ceiling, 1–5
-  kcal         Int? // computed target (Mifflin–St Jeor × activity, goal-adjusted)
-  macros       String? // Json { proteinG, carbsG, fatG }
+  kcal         Int? // computed per-day energy target (Mifflin–St Jeor × activity, goal-adjusted) — the ONLY home for per-day kcal
+  macros       String? // Json { proteinG, carbsG, fatG } — how `kcal` is split; deliberately carries no kcal of its own
   budgetWeekly Float? // estimated weekly food budget — SOFT constraint (validator warns, R12)
   mealsPerDay  Int       @default(3)
   snacksPerDay Int       @default(1)

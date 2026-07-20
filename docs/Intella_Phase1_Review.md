@@ -2,7 +2,9 @@
 
 **Version:** 1.0 · **Date:** July 7, 2026 · **Reviewer:** Claude (Opus 4.8) · **Branch:** `Phase1`
 
-> A code review of Phase 1 against Epic 1 (`Intella_Epics_and_Stories.md`, tickets **T1.1–T1.3**), the Global Build Context, the sources of truth (`schema.prisma`, `openapi.yaml`), and the in-force resolutions (**R1, R4, R6, R7, R9, R14, R23**). It records the verdict, a per-ticket scorecard, every finding with severity and a recommended action, what was done well, and the items to carry into later phases. Unlike the Phase 0 review, the findings here are **not yet fixed** — this document is the input to that decision. Where this review and the source files disagree, the files + code win and this doc should be corrected.
+> A code review of Phase 1 against Epic 1 (`Intella_Epics_and_Stories.md`, tickets **T1.1–T1.3**), the Global Build Context, the sources of truth (`schema.prisma`, `openapi.yaml`), and the in-force resolutions (**R1, R4, R6, R7, R9, R14, R23**). It records the verdict, a per-ticket scorecard, every finding with severity and a recommended action, what was done well, and the items to carry into later phases. Where this review and the source files disagree, the files + code win and this doc should be corrected.
+
+> **Status update (July 20, 2026).** Punch-list items **1–4 are now fixed** on `Phase1`; see §7 for the closing notes and §4.1–§4.4 for what changed. Findings §4.5 and §4.6 remain open by design (deliberate scope, documented below). Phase 1 is closed and Phase 2 is unblocked.
 
 ---
 
@@ -16,11 +18,11 @@ The review found **one item that is actually broken** — `pnpm lint` fails — 
 
 ## 2. Verification evidence
 
-| Check | Result |
+| Check | Result (original review · **after punch-list, July 20 2026**) |
 |---|---|
-| `pnpm test` | **94/94 pass** — 84 API across 14 suites + 10 shared `units` tests |
-| `pnpm typecheck` | clean (shared → scripts → eval → api → web) |
-| `pnpm lint` | **FAILS** — 2333 errors, **all** in `apps/web/.vite/deps/**` (Vite's pre-bundled dep cache); **0 in real source** (source lints clean once `.vite` is ignored) — see §4.1 |
+| `pnpm test` | 94/94 · **100/100 pass** — 85 API across 14 suites + 10 shared `units` + 5 new web `profile-forms` tests |
+| `pnpm typecheck` | clean · **clean** (shared → scripts → eval → api → web) |
+| `pnpm lint` | **FAILED** — 2333 errors, all in `apps/web/.vite/deps/**`; 0 in real source — see §4.1 · **PASSES**, verified against a deliberately planted `.vite/deps` file |
 | `pnpm openapi:generate` → git diff | **no drift** — the generated TS client regenerates identically; `422` documented on every PUT via `components.responses.ValidationError` |
 | Generated client wiring | `api-client.ts` drives `/profile`, `/diet-profile`, `/training-profile`, `/goals`, `/settings/api-keys`; tests exercise the **generated** client against **real** routes in-process (`app.inject`) |
 | Secrets / caches committed | none — `.vite/` gitignored (0 tracked); `ProviderCredential.ciphertext` is asserted never to appear in a response body |
@@ -53,6 +55,8 @@ The review found **one item that is actually broken** — `pnpm lint` fails — 
 
 **Recommended action.** Add `"**/.vite/**"` to the `ignores` list (and, defensively, `"**/.vitest/**"` and `"packages/*/src/generated/**"` so the generated OpenAPI client is never linted). Then the lint gate is green and safe to wire into CI.
 
+**✅ Fixed (July 20, 2026).** All three patterns added to `eslint.config.js`. Verified by creating a lint-error-laden `apps/web/.vite/deps/chunk-FAKE.js` and confirming `pnpm lint` still exits 0 — the earlier green run only proved the directory was absent.
+
 ### 4.2 `GET /profile` still auto-creates — and it defeats the R1 browser-timezone default *(medium)*
 
 **Finding.** Phase 0 §5.2 flagged that `getProfile` mutates on a read (auto-creates an empty `Profile`, advancing `serverSeq`) and said *"revisit in Phase 1 … consider returning an unpersisted default until the first `PUT`."* It was not changed — `apps/api/src/profile.ts` still does `prisma.profile.create({ data: {} })` when none exists. Tracing the consequence through onboarding:
@@ -65,17 +69,23 @@ So a new user in, say, `America/New_York` who accepts the defaults persists `tim
 
 **Recommended action.** Implement the §5.2 recommendation now (Phase 1 is the first real writer, and Phase 2 multiplies profile readers): make `GET /profile` return an **unpersisted default** (or a 404-style "not created") so the client's device timezone flows through the first `PUT`. This restores the R1 default and yields a real onboarding signal. If auto-create is kept for any reason, at minimum have onboarding treat a never-saved profile as blank so `browserTimezone()` wins.
 
+**✅ Fixed (July 20, 2026).** Took the 404 option, matching the existing diet/training precedent rather than inventing a third shape. OpenAPI-first: `openapi.yaml` GET `/profile` now documents `404 → NotFound`, the client was regenerated, then `getProfile` (`apps/api/src/profile.ts`) returns `ProfileResponse | null` with no create, the route maps null → `sendNotFound`, and `api-client.ts` uses `unwrapOrNull` (so `getProfile()` returns `Profile | null`). `OnboardingWizard` already passed `?? null` and needed no change; `ProfileSettings` was switched from a truthiness guard to `query.data !== undefined` so a loaded-but-null profile still seeds a device-defaulted draft. Pinned by two tests: an API test asserting `getProfile()` is null before first write **and** `profile.count() === 0` after two reads, and a web test asserting `loadPhysiology(null).timezone` is the device zone (not `UTC`) and survives into `buildProfileInput`.
+
 ### 4.3 `macros` JSON shape disagrees between the schema comment and Zod/OpenAPI *(low — latent, bites Phase 3)*
 
 **Finding.** `schema.prisma` documents `DietProfile.macros` as `Json { proteinG, carbsG, fatG }` (no `kcal`), but the shared `macrosSchema` (`apps/api/src/schemas.ts`) and the OpenAPI `Macros` component require `kcal` as well, and `DietProfile` also carries a separate top-level `kcal` column. Harmless in Phase 1 (both are engine-computed and always null), but when the Phase 3 nutrition engine writes `macros`: following the prisma comment (`{proteinG,carbsG,fatG}`) makes `parseTypedObject(row.macros, macrosSchema)` fail validation and **silently drop the blob to null** on read (the forgiving JSON-field parser degrades rather than throws); following the Zod shape duplicates per-day `kcal` across the column and the blob.
 
 **Recommended action.** Reconcile the shape before Phase 3 writes it — decide whether per-day `kcal` lives in the `kcal` column, inside `macros`, or both, and align the `schema.prisma` comment, `macrosSchema`, and the OpenAPI `Macros` component to match. (Note `Recipe.macrosPerServ` deliberately includes `kcal`; that's a separate, consistent shape.)
 
+**✅ Fixed (July 20, 2026).** Resolved in favour of the `schema.prisma` comment (the source of truth): **per-day `kcal` lives only in the `DietProfile.kcal` column**, and `DietProfile.macros` is the split with no `kcal` of its own — so the number has exactly one home. A new `MacroSplit` OpenAPI component (`{proteinG, carbsG, fatG}`) backs `DietProfile.macros`; the existing `Macros` (with `kcal`) is unchanged and still backs `Recipe.macrosPerServ` and adherence averages, with both components now carrying a description explaining which to use. Mirrored by `macroSplitSchema` in `apps/api/src/schemas.ts`, consumed by `diet-profile.ts`'s `parseTypedObject`. The `schema.prisma` comments were sharpened to state the invariant; `prisma migrate diff --from-migrations --to-schema` reports **"No difference detected"** (comment-only, so no migration).
+
 ### 4.4 No web / UI tests *(low — acceptable for a prototype, but onboarding is the most stateful surface)*
 
 **Finding.** `apps/web` has zero test files. The R6 conversion is exhaustively unit-tested at the pure-function level (`units.test.ts`), but the actual imperial↔metric boundary the user touches (`measurement-inputs.tsx`) is untested, and two T1.2 acceptance criteria — "resuming shows saved values" and "skipping optional fields still completes" — have no automated evidence. The forgiving `buildTrainingInput` logic that drops half-filled injury/baseline rows (so a touched-but-empty optional never 422s) is exactly the kind of thing a regression test should pin.
 
 **Recommended action.** Add a small set of component/integration tests for the measurement inputs and the onboarding resume/skip paths. Not a Phase 1 blocker, but cheap insurance before Phase 2+ refactors move this code.
+
+**◐ Partly fixed (July 20, 2026).** `apps/web/src/lib/profile-forms.test.ts` (5 tests) now covers the pure-function layer: the R1 device-timezone default, an explicitly saved timezone winning over it, resume-shows-saved-values, skip-omits-optionals (rather than sending blanks that `.strict()` would 422), and the `buildTrainingInput` drop-half-filled-rows logic. **Still open:** no component-level test renders `measurement-inputs.tsx`, so the imperial↔metric UI boundary itself is still only covered indirectly via `units.test.ts`. That needs a DOM environment (jsdom + Testing Library, neither currently a dependency) — deliberately deferred rather than pulled in mid-punch-list.
 
 ### 4.5 Settings and onboarding manage only the first goal *(low)*
 
@@ -111,12 +121,24 @@ So a new user in, say, `America/New_York` who accepts the defaults persists `tim
 
 ## 7. Recommended punch-list before Phase 2
 
-1. **Fix lint (§4.1).** Add `.vite` (and `generated`) to the ESLint `ignores`; confirm `pnpm lint` is green; then the CI gate is safe to add. *(~2 min)*
-2. **Fix the profile read side-effect + timezone default (§4.2).** Stop `GET /profile` auto-creating; let the device timezone flow through the first `PUT`. *(small)*
-3. **Reconcile the `macros` shape (§4.3)** and leave a note for Phase 3. *(~2 min)*
-4. *(Optional)* Add a couple of onboarding/measurement-input tests to lock the T1.2 resume/skip and R6-at-the-UI criteria (§4.4).
+1. ~~**Fix lint (§4.1).**~~ **✅ Done** — `.vite`, `.vitest`, and `packages/*/src/generated/**` added to the ESLint `ignores`; `pnpm lint` green and verified against a planted `.vite/deps` file. The CI gate is now safe to add.
+2. ~~**Fix the profile read side-effect + timezone default (§4.2).**~~ **✅ Done** — `GET /profile` 404s before first write (no auto-create), so the device timezone flows through the first `PUT`. Regression-pinned on both the API and web sides.
+3. ~~**Reconcile the `macros` shape (§4.3).**~~ **✅ Done** — per-day `kcal` lives only in the `DietProfile.kcal` column; `DietProfile.macros` is a new kcal-free `MacroSplit`. No migration required.
+4. *(Optional)* ~~Add a couple of onboarding/measurement-input tests~~ **◐ Partly done** — 5 pure-function tests cover the T1.2 resume/skip and R1 timezone criteria; a jsdom-rendered `measurement-inputs.tsx` test remains open (§4.4).
 
-None are blockers — Phase 1 genuinely achieves its objective. Items 1–3 are quick and worth doing now.
+**All blocking and quick items are closed; Phase 1 is complete and Phase 2 is unblocked.** The remaining open items are §4.4's DOM-level test, §4.5 (multi-goal UI — formally lands with Phase 8), and §4.6's nits.
+
+### Verification of the punch-list changes
+
+| Gate | Result |
+|---|---|
+| `pnpm test` | 100/100 pass (85 API + 10 shared + 5 web) |
+| `pnpm typecheck` | clean |
+| `pnpm lint` | exit 0, including with a lint-error-laden `apps/web/.vite/deps/` present |
+| `pnpm openapi:generate` | deterministic — regenerating twice yields an identical hash; the committed client matches the spec |
+| `prisma migrate diff` | "No difference detected" — the `schema.prisma` edits are comment-only |
+
+*Note: `pnpm test` initially failed wholesale in a fresh environment with a `better-sqlite3` `NODE_MODULE_VERSION` mismatch (native module built against a different Node ABI). This is environmental, not a code defect — `pnpm rebuild better-sqlite3` resolves it. Worth a line in the runbook if a fresh machine hits it.*
 
 ---
 

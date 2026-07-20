@@ -3,20 +3,20 @@ import type { Profile as PrismaProfile } from "@prisma/client";
 import type { IntellaPrismaClient } from "./db.js";
 import type { ProfileInput, ProfileResponse } from "./schemas.js";
 
+/**
+ * Read the single profile. Returns null when onboarding hasn't written one yet
+ * (the route maps that to 404), matching diet/training.
+ *
+ * A read must NOT create: auto-creating here would persist the schema default
+ * `timezone: "UTC"`, and because that value is truthy the client's
+ * device-timezone default (R1) could never win on the first save. It also
+ * leaves the app with no "has the user onboarded?" signal.
+ */
 export async function getProfile(
   prisma: IntellaPrismaClient
-): Promise<ProfileResponse> {
+): Promise<ProfileResponse | null> {
   const profile = await findProfile(prisma);
-
-  if (profile) {
-    return serializeProfile(profile);
-  }
-
-  return serializeProfile(
-    await prisma.profile.create({
-      data: {}
-    })
-  );
+  return profile ? serializeProfile(profile) : null;
 }
 
 export async function putProfile(

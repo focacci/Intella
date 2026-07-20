@@ -82,7 +82,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read profile */
+        /**
+         * Read profile
+         * @description 404 until onboarding writes one. Reading never creates a profile, so the client can tell "not onboarded yet" from "onboarded", and the device timezone it defaults to survives into the first PUT (R1).
+         */
         get: operations["getProfile"];
         /** Upsert profile */
         put: operations["putProfile"];
@@ -1171,8 +1174,15 @@ export interface components {
              */
             updatedAt?: string;
         };
+        /** @description A macro breakdown that carries its own energy total — used where the blob is self-contained (Recipe.macrosPerServ, adherence averages). */
         Macros: {
             kcal?: number;
+            proteinG?: number;
+            carbsG?: number;
+            fatG?: number;
+        };
+        /** @description A macro breakdown WITHOUT kcal, used by DietProfile.macros. The per-day energy target lives in the sibling DietProfile.kcal column so it has a single source of truth; this is only how that target is split. */
+        MacroSplit: {
             proteinG?: number;
             carbsG?: number;
             fatG?: number;
@@ -1324,8 +1334,8 @@ export interface components {
             cookingSkill?: string | null;
             effortMax?: number | null;
             kcal?: number | null;
-            /** @description Engine-computed per-day macros; null until the nutrition engine runs (Phase 3). */
-            macros?: components["schemas"]["Macros"] | null;
+            /** @description Engine-computed per-day macro split; null until the nutrition engine runs (Phase 3). Carries no kcal — the per-day energy target is the sibling `kcal` field. */
+            macros?: components["schemas"]["MacroSplit"] | null;
             /** @description Estimated weekly food budget. SOFT constraint — the validator warns when estimated cost exceeds it but never rejects a plan (R12). */
             budgetWeekly?: number | null;
             mealsPerDay?: number;
@@ -1673,6 +1683,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     putProfile: {

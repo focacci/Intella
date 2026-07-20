@@ -79,6 +79,10 @@ paths:
       tags: [Profile]
       operationId: getProfile
       summary: Read profile
+      description: >
+        404 until onboarding writes one. Reading never creates a profile, so the
+        client can tell "not onboarded yet" from "onboarded", and the device
+        timezone it defaults to survives into the first PUT (R1).
       responses:
         "200":
           description: Profile
@@ -86,6 +90,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Profile" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [Profile]
       operationId: putProfile
@@ -907,8 +912,22 @@ components:
 
     Macros:
       type: object
+      description: >
+        A macro breakdown that carries its own energy total — used where the
+        blob is self-contained (Recipe.macrosPerServ, adherence averages).
       properties:
         kcal: { type: integer }
+        proteinG: { type: number }
+        carbsG: { type: number }
+        fatG: { type: number }
+
+    MacroSplit:
+      type: object
+      description: >
+        A macro breakdown WITHOUT kcal, used by DietProfile.macros. The per-day
+        energy target lives in the sibling DietProfile.kcal column so it has a
+        single source of truth; this is only how that target is split.
+      properties:
         proteinG: { type: number }
         carbsG: { type: number }
         fatG: { type: number }
@@ -1087,9 +1106,12 @@ components:
         effortMax: { type: integer, nullable: true }
         kcal: { type: integer, nullable: true }
         macros:
-          oneOf: [{ $ref: "#/components/schemas/Macros" }]
+          oneOf: [{ $ref: "#/components/schemas/MacroSplit" }]
           nullable: true
-          description: Engine-computed per-day macros; null until the nutrition engine runs (Phase 3).
+          description: >
+            Engine-computed per-day macro split; null until the nutrition engine
+            runs (Phase 3). Carries no kcal — the per-day energy target is the
+            sibling `kcal` field.
         budgetWeekly:
           type: number
           nullable: true

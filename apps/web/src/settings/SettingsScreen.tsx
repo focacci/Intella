@@ -59,7 +59,9 @@ function ProfileSettings() {
   });
   const [draft, setDraft] = useState<PhysiologyDraft | null>(null);
   useEffect(() => {
-    if (query.data && !draft) setDraft(loadPhysiology(query.data));
+    // `!== undefined` not truthiness: null is a loaded "no profile saved yet",
+    // which must still seed a draft (from device defaults), not stay blank.
+    if (query.data !== undefined && !draft) setDraft(loadPhysiology(query.data ?? null));
   }, [query.data, draft]);
 
   const save = useMutation({

@@ -2,7 +2,11 @@ import type { DietProfile as PrismaDietProfile, Prisma } from "@prisma/client";
 
 import type { IntellaPrismaClient } from "./db.js";
 import { parseStringArray, parseTypedObject } from "./json-fields.js";
-import { macrosSchema, type DietProfileInput, type DietProfileResponse } from "./schemas.js";
+import {
+  macroSplitSchema,
+  type DietProfileInput,
+  type DietProfileResponse
+} from "./schemas.js";
 
 /**
  * Read the single diet profile. Returns null when onboarding hasn't written one
@@ -71,7 +75,7 @@ function serializeDietProfile(row: PrismaDietProfile): DietProfileResponse {
     cookingSkill: row.cookingSkill as DietProfileResponse["cookingSkill"],
     effortMax: row.effortMax,
     kcal: row.kcal,
-    macros: parseTypedObject(row.macros, macrosSchema),
+    macros: parseTypedObject(row.macros, macroSplitSchema),
     budgetWeekly: row.budgetWeekly,
     mealsPerDay: row.mealsPerDay,
     snacksPerDay: row.snacksPerDay,

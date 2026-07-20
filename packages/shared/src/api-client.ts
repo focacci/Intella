@@ -67,8 +67,9 @@ export function createIntellaClient(options: IntellaClientOptions = {}) {
     async getSystemStatus() {
       return unwrap<SystemStatus>(await client.GET("/system/status"));
     },
+    /** Null when onboarding hasn't saved a profile yet (404). */
     async getProfile() {
-      return unwrap<Profile>(await client.GET("/profile"));
+      return unwrapOrNull<Profile>(await client.GET("/profile"));
     },
     async putProfile(profile: ProfileInput) {
       return unwrap<Profile>(

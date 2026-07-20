@@ -6,6 +6,34 @@ import { buildServer } from "./server.js";
 import { closeAppAndDatabase, createTestDatabase } from "./test-helpers.js";
 
 describe("profile contract round-trip", () => {
+  it("404s before onboarding writes one, and reading never creates a row", async () => {
+    const database = await createTestDatabase();
+    const app = buildServer({
+      authToken: "test-token",
+      logger: false,
+      prisma: database.prisma
+    });
+
+    try {
+      const client = createIntellaClient({
+        authToken: "test-token",
+        baseUrl: "http://intella.test",
+        fetch: createInjectFetch(app)
+      });
+
+      // Null, not an auto-created empty profile: the client needs to be able to
+      // tell "not onboarded" from "onboarded", and a read must not write.
+      await expect(client.getProfile()).resolves.toBeNull();
+      await expect(client.getProfile()).resolves.toBeNull();
+
+      // The read side-effect this replaces persisted timezone "UTC", which
+      // defeated the R1 device-timezone default on the first save.
+      expect(await database.prisma.profile.count()).toBe(0);
+    } finally {
+      await closeAppAndDatabase(app, database);
+    }
+  });
+
   it("serves health and GET/PUT /profile through the generated client", async () => {
     const database = await createTestDatabase();
     const app = buildServer({
