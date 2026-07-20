@@ -319,6 +319,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/WorkoutSession" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "422": { $ref: "#/components/responses/ValidationError" }
 
   /training/session/{id}/feedback:
@@ -337,6 +338,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Feedback" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
 
   /training/progress:
     get:
@@ -1206,6 +1209,18 @@ components:
           type: object
           additionalProperties: true
           description: The rules-layer output that produced this program (explainability).
+        calibrationWeeks:
+          type: integer
+          description: >
+            Opening weeks spent discovering working loads because no baseline
+            lifts were supplied (R9). 0 when the program started from baselines.
+        degraded:
+          type: boolean
+          description: >
+            True when this program came from the deterministic rules-only
+            fallback rather than a model — the LLM was unreachable, over budget,
+            or failed validation twice (R10). Drives the "generated without
+            Claude" indicator on Today.
         status: { type: string }
         createdAt: { type: string, format: date-time }
 
@@ -1242,8 +1257,14 @@ components:
         exerciseId: { type: string }
         setNo: { type: integer }
         reps: { type: integer }
-        weight: { type: number }
+        weight: { type: number, description: Metric-canonical kg (R6). }
         rpe: { type: number, minimum: 1, maximum: 10 }
+        clientId:
+          type: string
+          description: >
+            Client-generated unique row id. Makes an offline create replayed via
+            /sync/push idempotent (T0.11) — resending the same clientId updates
+            the existing set rather than duplicating it.
 
     ProgressSeries:
       type: object

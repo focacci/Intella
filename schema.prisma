@@ -521,6 +521,66 @@ model BackupRun {
   @@index([status, startedAt])
 }
 
+/// Content-hash cache for generated artifacts (T2.8 / R20b). One row per
+/// successful generation, keyed by the canonical hash of the `inputConstraints`
+/// that produced it. A repeat generation whose constraints hash to the same
+/// value returns the cached artifact with ZERO model calls. `artifactRef` is a
+/// discriminated `{refType, refId}` pair flattened into two columns (R3) — no
+/// cross-table FK, resolved app-side. Ops-local: NOT syncable.
+model GenerationCache {
+  id              String   @id @default(cuid())
+  inputHash       String   @unique // canonical hash of inputConstraints (R20b)
+  generator       String // "training_program" | "meal_plan" | ...
+  artifactType    String // refType: "program" | "meal_plan" | ...
+  artifactId      String // refId
+  model           String // model that produced it, or "rules" when deterministic
+  route           String // "claude" | "local" | "rules"
+  constraintsHash String // == inputHash; kept for symmetry with the artifact row
+  hashVersion     Int // bump when the canonical-serialization rule changes
+  createdAt       DateTime @default(now())
+
+  @@index([generator])
+  @@index([artifactType, artifactId])
+}
+
+/// One row per model call attempt through the gateway (T2.8 / R10 step 6).
+/// Records route, tokens, cost estimate, latency, and whether the deterministic
+/// validator passed — the raw material for budget enforcement and the router's
+/// "which calls are local-safe" decision. Ops-local: NOT syncable.
+model LlmCall {
+  id              String   @id @default(cuid())
+  generator       String
+  route           String // "claude" | "local" | "rules"
+  model           String
+  inputHash       String
+  attempt         Int      @default(1) // 1 = first try; 2–3 = R10 repair attempts
+  tokensIn        Int      @default(0)
+  tokensOut       Int      @default(0)
+  costEst         Float    @default(0) // USD, from the route's per-token rates
+  latencyMs       Int      @default(0)
+  validatorPassed Boolean  @default(false)
+  error           String? // transport/provider failure detail, else null
+  createdAt       DateTime @default(now())
+
+  @@index([generator, createdAt])
+  @@index([createdAt])
+}
+
+/// Single-row operator configuration read by the gateway on every generation:
+/// the monthly spend ceiling, the router policy, the local-model endpoint, and
+/// the deterministic safety floors the rules layer clamps against (T2.10).
+/// Ops-local: NOT syncable.
+model OpsConfig {
+  id                 String   @id @default("singleton")
+  llmMonthlyCeiling  Float    @default(10) // USD; gateway degrades to local/rules past this
+  routerPolicy       String   @default("auto") // "auto"|"force_local"|"force_claude"|"rules_only"
+  localModelEndpoint String? // e.g. "http://127.0.0.1:11434" (Ollama)
+  localModel         String   @default("llama3.1")
+  claudeModel        String   @default("claude-opus-4-8")
+  safetyFloors       String   @default("{}") // Json SafetyFloors — see training/safety.ts
+  updatedAt          DateTime @updatedAt
+}
+
 /// Provider API keys entered from Settings (T1.3). Stored ENCRYPTED at rest
 /// (AES-256-GCM with the app's OS-keystore-backed key); the plaintext is
 /// returned to a caller exactly never — the web only ever sees a masked `last4`.

@@ -17,23 +17,45 @@ import {
   apiTokenListSchema,
   dietProfileInputSchema,
   dietProfileResponseSchema,
+  exerciseListSchema,
+  exerciseQuerySchema,
+  feedbackInputSchema,
+  feedbackResponseSchema,
   goalInputSchema,
   goalListSchema,
   goalResponseSchema,
   healthResponseSchema,
+  logSetsInputSchema,
   mintedApiTokenSchema,
   pairQuerySchema,
   pairResultSchema,
   profileInputSchema,
   profileResponseSchema,
+  programResponseSchema,
+  progressQuerySchema,
+  progressSeriesSchema,
   systemStatusSchema,
   trainingProfileInputSchema,
-  trainingProfileResponseSchema
+  trainingProfileResponseSchema,
+  workoutSessionResponseSchema
 } from "./schemas.js";
 import { getApiKeyStatus, putApiKeys } from "./settings.js";
 import { buildSystemStatus, type SystemStatusOverrides } from "./system-status.js";
 import { getTrainingProfile, putTrainingProfile } from "./training-profile.js";
+import {
+  generateAndPersistProgram,
+  getCurrentProgram,
+  getProgress,
+  getSessionById,
+  getTodaySession,
+  listExercises,
+  logSets,
+  submitFeedback,
+  toProgramResponse,
+  toSessionResponse
+} from "./training/service.js";
 import { listTokens, mintToken, revokeToken } from "./tokens.js";
+import type { LlmProvider } from "./llm/types.js";
 
 export type BuildServerOptions = {
   authToken?: string;
@@ -41,6 +63,13 @@ export type BuildServerOptions = {
   logger?: boolean;
   prisma?: IntellaPrismaClient;
   systemStatus?: SystemStatusOverrides;
+  /**
+   * Injected model providers for the LLM gateway. Tests supply stubs (or an
+   * explicit `null` to assert the rules-only path); production leaves this
+   * undefined so the gateway resolves real providers from the stored API key
+   * and `OpsConfig`.
+   */
+  llmProviders?: Partial<Record<"claude" | "local", LlmProvider | null>>;
 };
 
 export function buildServer(options: BuildServerOptions = {}) {
@@ -193,6 +222,155 @@ export function buildServer(options: BuildServerOptions = {}) {
     }
 
     return reply.code(204).send();
+  });
+
+  // ---------------------------------------------------------------- Training
+
+  const gatewayDeps = {
+    prisma,
+    config: apiConfig,
+    ...(options.llmProviders ? { providers: options.llmProviders } : {})
+  };
+
+  app.get("/exercises", async (request, reply) => {
+    const parsed = exerciseQuerySchema.safeParse(request.query);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    const exercises = await listExercises(prisma, parsed.data);
+
+    return exerciseListSchema.parse(
+      exercises.map((exercise) => ({
+        id: exercise.id,
+        name: exercise.name,
+        primaryMuscles: exercise.primaryMuscles,
+        // The wire field keeps the schema's `secondaryMus` spelling.
+        secondaryMus: exercise.secondaryMuscles,
+        equipment: exercise.equipment,
+        pattern: exercise.pattern,
+        difficulty: exercise.difficulty
+      }))
+    );
+  });
+
+  app.post("/training/program:generate", async (_request, reply) => {
+    const outcome = await generateAndPersistProgram(gatewayDeps);
+
+    if (!outcome.ok) {
+      // Onboarding hasn't produced the inputs the rules layer needs. This is a
+      // precondition, not a generation failure — 422 with a specific code so
+      // the UI can route the user to the missing step rather than showing a
+      // generic error.
+      return reply.code(422).send({
+        code: outcome.code,
+        message:
+          outcome.code === "no_training_profile"
+            ? "Add your training profile before generating a program."
+            : "Set an active goal before generating a program."
+      });
+    }
+
+    const program = await getCurrentProgram(prisma);
+
+    if (!program) {
+      return reply.code(422).send({
+        code: "generation_failed",
+        message: "The program was generated but could not be read back."
+      });
+    }
+
+    return reply.code(201).send(programResponseSchema.parse(toProgramResponse(program)));
+  });
+
+  app.get("/training/program/current", async (_request, reply) => {
+    const program = await getCurrentProgram(prisma);
+
+    if (!program) {
+      return sendNotFound(reply, "No program yet — generate one first");
+    }
+
+    return programResponseSchema.parse(toProgramResponse(program));
+  });
+
+  app.get("/training/session/today", async (_request, reply) => {
+    const session = await getTodaySession(prisma);
+
+    if (!session) {
+      return sendNotFound(reply, "No session scheduled for today");
+    }
+
+    return workoutSessionResponseSchema.parse(toSessionResponse(session));
+  });
+
+  app.post("/training/session/:id/log", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = logSetsInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    const result = await logSets(prisma, id, parsed.data);
+
+    if (!result.ok) {
+      return sendNotFound(reply, "No session with that id");
+    }
+
+    const session = await getSessionById(prisma, id);
+
+    if (!session) {
+      return sendNotFound(reply, "No session with that id");
+    }
+
+    return workoutSessionResponseSchema.parse(toSessionResponse(session));
+  });
+
+  app.post("/training/session/:id/feedback", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const parsed = feedbackInputSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    const feedback = await submitFeedback(prisma, id, parsed.data);
+
+    if (!feedback) {
+      return sendNotFound(reply, "No session with that id");
+    }
+
+    return reply.code(202).send(
+      feedbackResponseSchema.parse({
+        id: feedback.id,
+        domain: feedback.domain,
+        refType: feedback.refType,
+        refId: feedback.refId,
+        structured: feedback.structured
+          ? (JSON.parse(feedback.structured) as Record<string, unknown>)
+          : null,
+        freeText: feedback.freeText,
+        status: feedback.status,
+        createdAt: feedback.createdAt.toISOString()
+      })
+    );
+  });
+
+  app.get("/training/progress", async (request, reply) => {
+    const parsed = progressQuerySchema.safeParse(request.query);
+
+    if (!parsed.success) {
+      return sendValidationError(reply, parsed.error);
+    }
+
+    const series = await getProgress(
+      prisma,
+      parsed.data.metric,
+      parsed.data.exerciseId
+    );
+
+    return progressSeriesSchema.parse(series);
   });
 
   // Sync stubs (the engine lands in Phase 6). Documented in openapi.yaml; these

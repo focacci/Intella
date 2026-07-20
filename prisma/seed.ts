@@ -36,6 +36,14 @@ const exercises: ExerciseSeed[] = [
     difficulty: "intermediate"
   },
   {
+    name: "Front Squat",
+    primaryMuscles: ["quads"],
+    secondaryMus: ["glutes", "core", "upper_back"],
+    equipment: ["barbell", "rack"],
+    pattern: "squat",
+    difficulty: "advanced"
+  },
+  {
     name: "Goblet Squat",
     primaryMuscles: ["quads", "glutes"],
     secondaryMus: ["core"],
@@ -44,34 +52,146 @@ const exercises: ExerciseSeed[] = [
     difficulty: "beginner"
   },
   {
+    name: "Bodyweight Squat",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["core"],
+    equipment: ["bodyweight"],
+    pattern: "squat",
+    difficulty: "beginner"
+  },
+  {
+    name: "Hack Squat",
+    primaryMuscles: ["quads"],
+    secondaryMus: ["glutes"],
+    equipment: ["machine"],
+    pattern: "squat",
+    difficulty: "beginner"
+  },
+  {
+    name: "Leg Press",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["hamstrings"],
+    equipment: ["machine"],
+    pattern: "squat",
+    difficulty: "beginner"
+  },
+  {
+    name: "Kettlebell Goblet Squat",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["core"],
+    equipment: ["kettlebell"],
+    pattern: "squat",
+    difficulty: "beginner"
+  },
+  {
+    name: "Conventional Deadlift",
+    primaryMuscles: ["glutes", "hamstrings"],
+    secondaryMus: ["upper_back", "core", "quads"],
+    equipment: ["barbell"],
+    pattern: "hinge",
+    difficulty: "advanced"
+  },
+  {
     name: "Romanian Deadlift",
     primaryMuscles: ["hamstrings", "glutes"],
-    secondaryMus: ["back"],
+    secondaryMus: ["upper_back"],
     equipment: ["barbell"],
     pattern: "hinge",
     difficulty: "intermediate"
   },
   {
+    name: "Dumbbell Romanian Deadlift",
+    primaryMuscles: ["hamstrings", "glutes"],
+    secondaryMus: ["upper_back"],
+    equipment: ["dumbbell"],
+    pattern: "hinge",
+    difficulty: "beginner"
+  },
+  {
     name: "Trap Bar Deadlift",
     primaryMuscles: ["glutes", "hamstrings", "quads"],
-    secondaryMus: ["back", "core"],
+    secondaryMus: ["upper_back", "core"],
     equipment: ["trap_bar"],
+    pattern: "hinge",
+    difficulty: "beginner"
+  },
+  {
+    name: "Hip Thrust",
+    primaryMuscles: ["glutes"],
+    secondaryMus: ["hamstrings"],
+    equipment: ["barbell", "bench"],
+    pattern: "hinge",
+    difficulty: "beginner"
+  },
+  {
+    name: "Kettlebell Swing",
+    primaryMuscles: ["glutes", "hamstrings"],
+    secondaryMus: ["core", "upper_back"],
+    equipment: ["kettlebell"],
+    pattern: "hinge",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Back Extension",
+    primaryMuscles: ["glutes", "hamstrings"],
+    secondaryMus: ["core"],
+    equipment: ["bodyweight"],
     pattern: "hinge",
     difficulty: "beginner"
   },
   {
     name: "Bench Press",
     primaryMuscles: ["chest"],
-    secondaryMus: ["triceps", "front_delts"],
+    secondaryMus: ["triceps", "shoulders"],
     equipment: ["barbell", "bench"],
     pattern: "horizontal_push",
     difficulty: "intermediate"
   },
   {
+    name: "Incline Bench Press",
+    primaryMuscles: ["chest", "shoulders"],
+    secondaryMus: ["triceps"],
+    equipment: ["barbell", "bench"],
+    pattern: "horizontal_push",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Dumbbell Bench Press",
+    primaryMuscles: ["chest"],
+    secondaryMus: ["triceps", "shoulders"],
+    equipment: ["dumbbell", "bench"],
+    pattern: "horizontal_push",
+    difficulty: "beginner"
+  },
+  {
     name: "Push-Up",
     primaryMuscles: ["chest"],
-    secondaryMus: ["triceps", "core"],
+    secondaryMus: ["triceps", "core", "shoulders"],
     equipment: ["bodyweight"],
+    pattern: "horizontal_push",
+    difficulty: "beginner"
+  },
+  {
+    name: "Chest Press Machine",
+    primaryMuscles: ["chest"],
+    secondaryMus: ["triceps", "shoulders"],
+    equipment: ["machine"],
+    pattern: "horizontal_push",
+    difficulty: "beginner"
+  },
+  {
+    name: "Cable Chest Fly",
+    primaryMuscles: ["chest"],
+    secondaryMus: ["shoulders"],
+    equipment: ["cable_machine"],
+    pattern: "horizontal_push",
+    difficulty: "beginner"
+  },
+  {
+    name: "Band Chest Press",
+    primaryMuscles: ["chest"],
+    secondaryMus: ["triceps", "shoulders"],
+    equipment: ["bands"],
     pattern: "horizontal_push",
     difficulty: "beginner"
   },
@@ -87,14 +207,45 @@ const exercises: ExerciseSeed[] = [
     name: "Dumbbell Shoulder Press",
     primaryMuscles: ["shoulders"],
     secondaryMus: ["triceps"],
-    equipment: ["dumbbells"],
+    equipment: ["dumbbell"],
+    pattern: "vertical_push",
+    difficulty: "beginner"
+  },
+  {
+    name: "Seated Machine Shoulder Press",
+    primaryMuscles: ["shoulders"],
+    secondaryMus: ["triceps"],
+    equipment: ["machine"],
+    pattern: "vertical_push",
+    difficulty: "beginner"
+  },
+  {
+    name: "Pike Push-Up",
+    primaryMuscles: ["shoulders"],
+    secondaryMus: ["triceps", "core"],
+    equipment: ["bodyweight"],
+    pattern: "vertical_push",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Dumbbell Lateral Raise",
+    primaryMuscles: ["shoulders"],
+    equipment: ["dumbbell"],
     pattern: "vertical_push",
     difficulty: "beginner"
   },
   {
     name: "Pull-Up",
     primaryMuscles: ["lats", "upper_back"],
-    secondaryMus: ["biceps"],
+    secondaryMus: ["biceps", "core"],
+    equipment: ["pull_up_bar"],
+    pattern: "vertical_pull",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Chin-Up",
+    primaryMuscles: ["lats", "biceps"],
+    secondaryMus: ["upper_back"],
     equipment: ["pull_up_bar"],
     pattern: "vertical_pull",
     difficulty: "intermediate"
@@ -106,6 +257,22 @@ const exercises: ExerciseSeed[] = [
     equipment: ["cable_machine"],
     pattern: "vertical_pull",
     difficulty: "beginner"
+  },
+  {
+    name: "Band Lat Pulldown",
+    primaryMuscles: ["lats"],
+    secondaryMus: ["biceps", "upper_back"],
+    equipment: ["bands"],
+    pattern: "vertical_pull",
+    difficulty: "beginner"
+  },
+  {
+    name: "Barbell Row",
+    primaryMuscles: ["upper_back", "lats"],
+    secondaryMus: ["biceps", "core"],
+    equipment: ["barbell"],
+    pattern: "horizontal_pull",
+    difficulty: "intermediate"
   },
   {
     name: "One-Arm Dumbbell Row",
@@ -124,18 +291,138 @@ const exercises: ExerciseSeed[] = [
     difficulty: "beginner"
   },
   {
+    name: "Chest-Supported Row",
+    primaryMuscles: ["upper_back"],
+    secondaryMus: ["lats", "biceps"],
+    equipment: ["machine"],
+    pattern: "horizontal_pull",
+    difficulty: "beginner"
+  },
+  {
+    name: "Inverted Row",
+    primaryMuscles: ["upper_back", "lats"],
+    secondaryMus: ["biceps", "core"],
+    equipment: ["bodyweight"],
+    pattern: "horizontal_pull",
+    difficulty: "beginner"
+  },
+  {
+    name: "Face Pull",
+    primaryMuscles: ["upper_back", "shoulders"],
+    equipment: ["cable_machine"],
+    pattern: "horizontal_pull",
+    difficulty: "beginner"
+  },
+  {
     name: "Split Squat",
     primaryMuscles: ["quads", "glutes"],
-    secondaryMus: ["adductors", "core"],
-    equipment: ["dumbbells"],
+    secondaryMus: ["core"],
+    equipment: ["dumbbell"],
     pattern: "single_leg",
     difficulty: "intermediate"
+  },
+  {
+    name: "Bulgarian Split Squat",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["core", "hamstrings"],
+    equipment: ["dumbbell", "bench"],
+    pattern: "single_leg",
+    difficulty: "advanced"
+  },
+  {
+    name: "Walking Lunge",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["hamstrings", "core"],
+    equipment: ["dumbbell"],
+    pattern: "single_leg",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Step-Up",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["core"],
+    equipment: ["bodyweight", "bench"],
+    pattern: "single_leg",
+    difficulty: "beginner"
+  },
+  {
+    name: "Reverse Lunge",
+    primaryMuscles: ["quads", "glutes"],
+    secondaryMus: ["hamstrings"],
+    equipment: ["bodyweight"],
+    pattern: "single_leg",
+    difficulty: "beginner"
   },
   {
     name: "Leg Curl",
     primaryMuscles: ["hamstrings"],
     equipment: ["machine"],
     pattern: "knee_flexion",
+    difficulty: "beginner"
+  },
+  {
+    name: "Nordic Curl",
+    primaryMuscles: ["hamstrings"],
+    secondaryMus: ["glutes"],
+    equipment: ["bodyweight"],
+    pattern: "knee_flexion",
+    difficulty: "advanced"
+  },
+  {
+    name: "Dumbbell Leg Curl",
+    primaryMuscles: ["hamstrings"],
+    equipment: ["dumbbell", "bench"],
+    pattern: "knee_flexion",
+    difficulty: "beginner"
+  },
+  {
+    name: "Standing Calf Raise",
+    primaryMuscles: ["calves"],
+    equipment: ["machine"],
+    pattern: "calf_raise",
+    difficulty: "beginner"
+  },
+  {
+    name: "Dumbbell Calf Raise",
+    primaryMuscles: ["calves"],
+    equipment: ["dumbbell"],
+    pattern: "calf_raise",
+    difficulty: "beginner"
+  },
+  {
+    name: "Bodyweight Calf Raise",
+    primaryMuscles: ["calves"],
+    equipment: ["bodyweight"],
+    pattern: "calf_raise",
+    difficulty: "beginner"
+  },
+  {
+    name: "Dumbbell Curl",
+    primaryMuscles: ["biceps"],
+    equipment: ["dumbbell"],
+    pattern: "elbow_flexion",
+    difficulty: "beginner"
+  },
+  {
+    name: "Barbell Curl",
+    primaryMuscles: ["biceps"],
+    secondaryMus: ["upper_back"],
+    equipment: ["barbell"],
+    pattern: "elbow_flexion",
+    difficulty: "beginner"
+  },
+  {
+    name: "Cable Curl",
+    primaryMuscles: ["biceps"],
+    equipment: ["cable_machine"],
+    pattern: "elbow_flexion",
+    difficulty: "beginner"
+  },
+  {
+    name: "Band Curl",
+    primaryMuscles: ["biceps"],
+    equipment: ["bands"],
+    pattern: "elbow_flexion",
     difficulty: "beginner"
   },
   {
@@ -146,10 +433,55 @@ const exercises: ExerciseSeed[] = [
     difficulty: "beginner"
   },
   {
-    name: "Dumbbell Curl",
-    primaryMuscles: ["biceps"],
-    equipment: ["dumbbells"],
-    pattern: "elbow_flexion",
+    name: "Overhead Dumbbell Extension",
+    primaryMuscles: ["triceps"],
+    equipment: ["dumbbell"],
+    pattern: "elbow_extension",
+    difficulty: "beginner"
+  },
+  {
+    name: "Close-Grip Bench Press",
+    primaryMuscles: ["triceps"],
+    secondaryMus: ["chest", "shoulders"],
+    equipment: ["barbell", "bench"],
+    pattern: "elbow_extension",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Bench Dip",
+    primaryMuscles: ["triceps"],
+    secondaryMus: ["chest"],
+    equipment: ["bodyweight", "bench"],
+    pattern: "elbow_extension",
+    difficulty: "beginner"
+  },
+  {
+    name: "Plank",
+    primaryMuscles: ["core"],
+    equipment: ["bodyweight"],
+    pattern: "core",
+    difficulty: "beginner"
+  },
+  {
+    name: "Hanging Leg Raise",
+    primaryMuscles: ["core"],
+    secondaryMus: ["lats"],
+    equipment: ["pull_up_bar"],
+    pattern: "core",
+    difficulty: "intermediate"
+  },
+  {
+    name: "Cable Crunch",
+    primaryMuscles: ["core"],
+    equipment: ["cable_machine"],
+    pattern: "core",
+    difficulty: "beginner"
+  },
+  {
+    name: "Dead Bug",
+    primaryMuscles: ["core"],
+    equipment: ["bodyweight"],
+    pattern: "core",
     difficulty: "beginner"
   }
 ];

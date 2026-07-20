@@ -207,6 +207,134 @@ export const apiKeysInputSchema = z
   })
   .strict();
 
+// ---------------------------------------------------------------------------
+// Training (Epic 2). These mirror the OpenAPI request/response shapes; the
+// engine's own types live in `training/types.ts` and are deliberately separate
+// — the wire contract and the internal model are allowed to diverge.
+// ---------------------------------------------------------------------------
+
+export const exerciseResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  primaryMuscles: z.array(z.string()),
+  secondaryMus: z.array(z.string()),
+  equipment: z.array(z.string()),
+  pattern: z.string(),
+  difficulty: z.string(),
+  mediaUrl: z.string().nullable().optional()
+});
+
+export const exerciseListSchema = z.array(exerciseResponseSchema);
+
+export const exerciseQuerySchema = z.object({
+  equipment: z.string().min(1).optional(),
+  muscle: z.string().min(1).optional()
+});
+
+export const plannedItemSchema = z.object({
+  exerciseId: z.string(),
+  exerciseName: z.string(),
+  targetSets: z.number().int(),
+  repRange: z.string(),
+  targetLoad: z.number().nullable(),
+  rpe: z.number().nullable()
+});
+
+export const programResponseSchema = z.object({
+  id: z.string(),
+  goalType: z.string(),
+  split: z.record(z.string(), z.unknown()),
+  weeks: z.number().int(),
+  progressionScheme: z.record(z.string(), z.unknown()),
+  inputConstraints: z.record(z.string(), z.unknown()),
+  calibrationWeeks: z.number().int(),
+  degraded: z.boolean(),
+  status: z.string(),
+  createdAt: z.string().datetime({ offset: true })
+});
+
+export const setLogResponseSchema = z.object({
+  id: z.string(),
+  exerciseId: z.string(),
+  setNo: z.number().int(),
+  reps: z.number().int().nullable(),
+  weight: z.number().nullable(),
+  rpe: z.number().nullable()
+});
+
+export const workoutSessionResponseSchema = z.object({
+  id: z.string(),
+  programId: z.string(),
+  date: z.string().datetime({ offset: true }),
+  weekNo: z.number().int(),
+  label: z.string().nullable(),
+  status: z.enum(["planned", "completed", "skipped", "partial"]),
+  plannedItems: z.array(plannedItemSchema),
+  coachingNote: z.string().nullable(),
+  setLogs: z.array(setLogResponseSchema)
+});
+
+export const setLogInputSchema = z
+  .object({
+    exerciseId: z.string().min(1),
+    setNo: z.number().int().min(1),
+    reps: z.number().int().min(0).max(1000).optional(),
+    // Metric-canonical kg (R6). Bodyweight movements log 0.
+    weight: z.number().min(0).max(1000).optional(),
+    rpe: z.number().min(1).max(10).optional(),
+    clientId: z.string().min(1).optional()
+  })
+  .strict();
+
+export const logSetsInputSchema = z
+  .object({
+    status: z.enum(["completed", "skipped", "partial"]).optional(),
+    sets: z.array(setLogInputSchema)
+  })
+  .strict();
+
+export const feedbackInputSchema = z
+  .object({
+    structured: z.record(z.string(), z.unknown()).optional(),
+    freeText: z.string().min(1).max(2000).optional(),
+    clientId: z.string().min(1).optional()
+  })
+  .strict();
+
+export const feedbackResponseSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  refType: z.string().nullable(),
+  refId: z.string().nullable(),
+  structured: z.record(z.string(), z.unknown()).nullable(),
+  freeText: z.string().nullable(),
+  status: z.enum(["raw", "parsed"]),
+  createdAt: z.string().datetime({ offset: true })
+});
+
+export const progressQuerySchema = z.object({
+  metric: z.enum(["volume", "est1rm", "bodyweight"]).default("volume"),
+  exerciseId: z.string().min(1).optional()
+});
+
+export const progressSeriesSchema = z.object({
+  metric: z.enum(["volume", "est1rm", "bodyweight"]),
+  points: z.array(
+    z.object({
+      date: z.string().datetime({ offset: true }),
+      value: z.number()
+    })
+  )
+});
+
+export const generationErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  violations: z
+    .array(z.object({ rule: z.string(), detail: z.string() }))
+    .optional()
+});
+
 export const systemStatusSchema = z.object({
   mode: z.enum(["full", "rules_local", "rules_only"]),
   llm: z.enum(["up", "down"]),
@@ -266,3 +394,10 @@ export type ApiTokenResponse = z.infer<typeof apiTokenResponseSchema>;
 export type MintedApiTokenResponse = z.infer<typeof mintedApiTokenSchema>;
 export type PairQuery = z.infer<typeof pairQuerySchema>;
 export type PairResult = z.infer<typeof pairResultSchema>;
+export type ExerciseResponse = z.infer<typeof exerciseResponseSchema>;
+export type ExerciseQuery = z.infer<typeof exerciseQuerySchema>;
+export type ProgramResponse = z.infer<typeof programResponseSchema>;
+export type WorkoutSessionResponse = z.infer<typeof workoutSessionResponseSchema>;
+export type LogSetsInputBody = z.infer<typeof logSetsInputSchema>;
+export type FeedbackInputBody = z.infer<typeof feedbackInputSchema>;
+export type ProgressQuery = z.infer<typeof progressQuerySchema>;

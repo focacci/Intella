@@ -337,6 +337,7 @@ export interface paths {
                         "application/json": components["schemas"]["WorkoutSession"];
                     };
                 };
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -380,6 +381,8 @@ export interface paths {
                         "application/json": components["schemas"]["Feedback"];
                     };
                 };
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["ValidationError"];
             };
         };
         delete?: never;
@@ -1413,6 +1416,10 @@ export interface components {
             inputConstraints?: {
                 [key: string]: unknown;
             };
+            /** @description Opening weeks spent discovering working loads because no baseline lifts were supplied (R9). 0 when the program started from baselines. */
+            calibrationWeeks?: number;
+            /** @description True when this program came from the deterministic rules-only fallback rather than a model — the LLM was unreachable, over budget, or failed validation twice (R10). Drives the "generated without Claude" indicator on Today. */
+            degraded?: boolean;
             status?: string;
             /** Format: date-time */
             createdAt?: string;
@@ -1442,8 +1449,11 @@ export interface components {
             exerciseId: string;
             setNo: number;
             reps?: number;
+            /** @description Metric-canonical kg (R6). */
             weight?: number;
             rpe?: number;
+            /** @description Client-generated unique row id. Makes an offline create replayed via /sync/push idempotent (T0.11) — resending the same clientId updates the existing set rather than duplicating it. */
+            clientId?: string;
         };
         ProgressSeries: {
             metric?: string;
