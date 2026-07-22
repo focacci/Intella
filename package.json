@@ -28,7 +28,8 @@
     "backup:run": "node --import tsx apps/api/src/ops/backup-cli.ts",
     "backup:smoke": "node --import tsx apps/api/src/ops/backup-smoke.ts",
     "postinstall": "prisma generate",
-    "smoke:training": "node --import tsx apps/api/src/training/smoke.ts"
+    "smoke:training": "node --import tsx apps/api/src/training/smoke.ts",
+    "eval:training": "pnpm --filter @intella/eval eval"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",

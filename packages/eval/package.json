@@ -6,6 +6,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run",
+    "eval": "node --import tsx src/run.ts"
+  },
+  "dependencies": {
+    "@intella/api": "workspace:*"
   }
 }

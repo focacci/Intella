@@ -1,0 +1,1887 @@
+{
+  "harnessVersion": 1,
+  "label": "baseline",
+  "generator": "rules",
+  "totalCases": 20,
+  "passRates": {
+    "validator_passes": 1,
+    "no_contraindicated_pattern": 1,
+    "only_allowed_exercises": 1,
+    "volume_under_ceiling": 1,
+    "loads_within_envelope": 1,
+    "rpe_within_envelope": 1,
+    "volume_meets_floor": 0.95,
+    "variety_floor": 0.5,
+    "compound_first": 1,
+    "pattern_coverage": 1,
+    "session_fits_time": 1,
+    "coaching_note_present": 1,
+    "calibration_is_conservative": 1,
+    "every_muscle_reachable_is_touched": 1
+  },
+  "overallPassRate": 0.9607142857142857,
+  "criticalPassRate": 1,
+  "qualityPassRate": 0.93125,
+  "cases": [
+    {
+      "caseId": "hypertrophy-4d-fullgym-baselines",
+      "probes": "The mainstream case: an experienced lifter with numbers on file.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "22/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "hypertrophy-4d-fullgym-coldstart",
+      "probes": "Same profile with NO baselines — must emit a calibration week (R9).",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "22/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "strength-3d-barbell",
+      "probes": "Strength block: low reps, higher intensity, earlier deload.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 13/24 distinct (54%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "fatloss-5d-fullgym",
+      "probes": "Fat-loss phase: pulled-back volume, higher reps.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "21/21 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "health-2d-dumbbells",
+      "probes": "Minimum viable dose: two short days, dumbbells only.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 4/6 distinct (67%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "hamstrings untouched, but every slot is used"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "beginner-3d-bodyweight",
+      "probes": "Zero equipment. The generator must still produce a real program.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 3/9 distinct (33%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "hamstrings untouched, but every slot is used"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "beginner-3d-fullgym-coldstart",
+      "probes": "New lifter, full gym, no numbers — the classic onboarding path.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 16/24 distinct (67%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "advanced-6d-ppl",
+      "probes": "High frequency: PPL twice, must not blow past recovery ceilings.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 23/36 distinct (64%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "advanced-7d",
+      "probes": "Every day of the week — the schedule edge case.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 30/44 distinct (68%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "onceweekly-1d",
+      "probes": "One session a week. Full body or nothing.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "8/8 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "knee-injury-4d",
+      "probes": "HARD constraint: no squat/lunge/leg-curl patterns may appear.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "18/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "shoulder-injury-4d",
+      "probes": "HARD constraint: no pressing. Chest may become untrainable.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "18/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "lower-back-injury-3d",
+      "probes": "HARD constraint: hinge and squat both removed.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "22/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "double-injury-4d",
+      "probes": "Two simultaneous injuries — the most constrained realistic profile.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 14/24 distinct (58%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "explicit-avoid-patterns",
+      "probes": "A user who named the pattern themselves, not just the body part.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "20/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "home-rack-4d",
+      "probes": "A realistic home gym: rack, barbell, bench, no machines.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 16/24 distinct (67%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    },
+    {
+      "caseId": "bands-only-3d",
+      "probes": "Travel kit: bands and bodyweight.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "hamstrings 3/5"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 5/15 distinct (33%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 2
+    },
+    {
+      "caseId": "short-sessions-5d",
+      "probes": "30-minute sessions: the time budget binds hard.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "15/15 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "calves untouched, but every slot is used"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "long-sessions-3d",
+      "probes": "90-minute sessions: must not just pad with junk volume.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "23/24 distinct"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "not a calibration block"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 0
+    },
+    {
+      "caseId": "lightweight-beginner",
+      "probes": "A small, light beginner — calibration loads must stay sane.",
+      "valid": true,
+      "properties": [
+        {
+          "id": "validator_passes",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "no_contraindicated_pattern",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "only_allowed_exercises",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_under_ceiling",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "loads_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "rpe_within_envelope",
+          "tier": "critical",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "volume_meets_floor",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "variety_floor",
+          "tier": "quality",
+          "passed": false,
+          "detail": "only 10/15 distinct (67%)"
+        },
+        {
+          "id": "compound_first",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "pattern_coverage",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "session_fits_time",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "coaching_note_present",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "calibration_is_conservative",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        },
+        {
+          "id": "every_muscle_reachable_is_touched",
+          "tier": "quality",
+          "passed": true,
+          "detail": "ok"
+        }
+      ],
+      "criticalFailures": 0,
+      "qualityFailures": 1
+    }
+  ]
+}
