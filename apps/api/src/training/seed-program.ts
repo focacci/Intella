@@ -46,8 +46,15 @@ export function buildSeedProgram(constraints: TrainingConstraints): GeneratedPro
     constraints.allowedExercises.map((exercise) => [exercise.id, exercise])
   );
 
+  // How many times each pattern has already been filled this week. Used to
+  // ROTATE through the available movements rather than picking the same
+  // top-ranked one every day — otherwise a 6-day block is the same three
+  // exercises repeated, which is a genuinely worse program even though it
+  // satisfies every hard constraint.
+  const patternUse = new Map<string, number>();
+
   const days = constraints.split.days.map((day) => {
-    const chosen = selectExercisesForDay(day.patterns, day.focus, constraints);
+    const chosen = selectExercisesForDay(day.patterns, day.focus, constraints, patternUse);
 
     return {
       label: day.label,
@@ -76,11 +83,15 @@ export function buildSeedProgram(constraints: TrainingConstraints): GeneratedPro
  * Pick this day's exercises: one per pattern in the day's priority order, then
  * top up from anything else that trains the day's focus muscles until the
  * session's minimum item count is met.
+ *
+ * `patternUse` carries across days so the Nth time a pattern comes up, the Nth
+ * ranked movement is chosen. Deterministic, but varied.
  */
 function selectExercisesForDay(
   patterns: string[],
   focus: string[],
-  constraints: TrainingConstraints
+  constraints: TrainingConstraints,
+  patternUse: Map<string, number>
 ): string[] {
   const { min, max } = constraints.itemsPerSession;
   const chosen: string[] = [];
@@ -91,18 +102,24 @@ function selectExercisesForDay(
       break;
     }
 
-    const candidate = constraints.allowedExercises
+    const candidates = constraints.allowedExercises
       .filter((exercise) => exercise.pattern === pattern && !used.has(exercise.id))
       // Rank compounds (more primary movers) first, then by name for a stable
       // tie-break — so selection never depends on library insertion order.
       .sort(
         (a, b) =>
           b.primaryMuscles.length - a.primaryMuscles.length || a.name.localeCompare(b.name)
-      )[0];
+      );
 
-    if (candidate) {
+    if (candidates.length > 0) {
+      const rotation = patternUse.get(pattern) ?? 0;
+      // Wrap: with fewer movements than days, repetition is unavoidable — but
+      // it cycles rather than fixating on one.
+      const candidate = candidates[rotation % candidates.length]!;
+
       chosen.push(candidate.id);
       used.add(candidate.id);
+      patternUse.set(pattern, rotation + 1);
     }
   }
 

@@ -265,10 +265,7 @@ export function buildServer(options: BuildServerOptions = {}) {
       // generic error.
       return reply.code(422).send({
         code: outcome.code,
-        message:
-          outcome.code === "no_training_profile"
-            ? "Add your training profile before generating a program."
-            : "Set an active goal before generating a program."
+        message: PRECONDITION_MESSAGES[outcome.code]
       });
     }
 
@@ -409,6 +406,21 @@ export function buildServer(options: BuildServerOptions = {}) {
 
   return app;
 }
+
+/**
+ * Actionable copy for each generation precondition. Each one names the single
+ * next thing the user can do about it — a precondition the user cannot act on
+ * is just an error page with extra steps.
+ */
+const PRECONDITION_MESSAGES: Record<string, string> = {
+  no_training_profile: "Add your training profile before generating a program.",
+  no_goal: "Set an active goal before generating a program.",
+  no_exercise_library:
+    "The exercise library is empty. Run the database seed (pnpm prisma:seed) to load it.",
+  no_exercises_available:
+    "Your equipment and injury settings rule out every exercise in the library. " +
+    "Add equipment or narrow the movement patterns you're avoiding."
+};
 
 function sendPairForbidden(reply: FastifyReply) {
   return reply.code(403).send({

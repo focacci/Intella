@@ -180,6 +180,74 @@ describe("POST /training/program:generate (T2.4)", () => {
     }
   });
 
+  it("422s when the exercise library has not been seeded", async () => {
+    const ctx = await setup();
+
+    try {
+      const { prisma } = ctx.database;
+      await prisma.goal.create({ data: { type: "build_muscle", status: "active" } });
+      await prisma.trainingProfile.create({
+        data: {
+          experience: "beginner",
+          daysPerWeek: 3,
+          sessionMins: 45,
+          equipment: JSON.stringify(["full_gym"])
+        }
+      });
+
+      // Generating against an empty menu must NOT quietly persist a program of
+      // empty sessions — the user would land on a blank Today with no clue why.
+      const response = await ctx.app.inject({
+        method: "POST",
+        url: "/training/program:generate",
+        headers: auth
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json()).toMatchObject({ code: "no_exercise_library" });
+      expect(await prisma.program.findMany()).toHaveLength(0);
+    } finally {
+      await ctx.app.close();
+      await ctx.database.cleanup();
+    }
+  });
+
+  it("422s when equipment and injuries rule out every exercise", async () => {
+    const ctx = await setup();
+
+    try {
+      await seedProfileAndLibrary(ctx);
+
+      // Bodyweight is always available by design, so emptying the menu takes
+      // both: only machines on hand, AND every pattern that the machines or the
+      // one bodyweight movement cover ruled out.
+      await ctx.database.prisma.trainingProfile.updateMany({
+        data: {
+          equipment: JSON.stringify(["machine"]),
+          injuries: JSON.stringify([
+            {
+              area: "everything",
+              avoidPatterns: ["knee_flexion", "calf_raise", "core"]
+            }
+          ])
+        }
+      });
+
+      const response = await ctx.app.inject({
+        method: "POST",
+        url: "/training/program:generate",
+        headers: auth
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json()).toMatchObject({ code: "no_exercises_available" });
+      expect(await ctx.database.prisma.program.findMany()).toHaveLength(0);
+    } finally {
+      await ctx.app.close();
+      await ctx.database.cleanup();
+    }
+  });
+
   it("generates and persists a valid program with the LLM unreachable (R18)", async () => {
     const ctx = await setup();
 

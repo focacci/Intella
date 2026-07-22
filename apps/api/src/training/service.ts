@@ -52,9 +52,18 @@ export type TrainingContext = {
   timezone: string;
 };
 
+/**
+ * Preconditions the rules layer cannot work around. These are NOT generation
+ * failures — nothing was attempted — so they surface as a specific code the UI
+ * routes on, rather than as a degraded program or a generic error.
+ */
 export type ContextError =
   | { ok: false; code: "no_training_profile" }
-  | { ok: false; code: "no_goal" };
+  | { ok: false; code: "no_goal" }
+  /** The seeded reference library is missing entirely (`pnpm prisma:seed`). */
+  | { ok: false; code: "no_exercise_library" }
+  /** The library exists, but equipment + injuries filtered it down to nothing. */
+  | { ok: false; code: "no_exercises_available" };
 
 // ---------------------------------------------------------------- Constraints
 
@@ -83,6 +92,14 @@ export async function buildTrainingContext(
     return { ok: false, code: "no_goal" };
   }
 
+  // Generating against an empty menu would "succeed" and persist a program of
+  // empty sessions — technically degraded-but-saved, actually useless. Fail the
+  // precondition loudly instead, so the user gets an actionable message rather
+  // than a Today screen with nothing on it.
+  if (exerciseRows.length === 0) {
+    return { ok: false, code: "no_exercise_library" };
+  }
+
   const trainingProfile: TrainingProfileInputs = {
     experience: trainingProfileRow.experience as Experience,
     daysPerWeek: trainingProfileRow.daysPerWeek,
@@ -102,6 +119,10 @@ export async function buildTrainingContext(
     exercises,
     feedback
   });
+
+  if (constraints.allowedExercises.length === 0) {
+    return { ok: false, code: "no_exercises_available" };
+  }
 
   // R20b inclusion list: the id + updatedAt of every row that influenced the
   // constraints. Editing any of them changes the hash, so the cache can never
