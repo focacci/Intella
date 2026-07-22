@@ -20,6 +20,16 @@ export type ApiToken = components["schemas"]["ApiToken"];
 export type ApiTokenInput = components["schemas"]["ApiTokenInput"];
 export type MintedApiToken = components["schemas"]["MintedApiToken"];
 export type ApiErrorBody = components["schemas"]["Error"];
+export type Exercise = components["schemas"]["Exercise"];
+export type Program = components["schemas"]["Program"];
+export type WorkoutSession = components["schemas"]["WorkoutSession"];
+export type PlannedItem = components["schemas"]["PlannedItem"];
+export type SetLog = components["schemas"]["SetLog"];
+export type SetLogInput = components["schemas"]["SetLogInput"];
+export type Feedback = components["schemas"]["Feedback"];
+export type FeedbackInput = components["schemas"]["FeedbackInput"];
+export type ProgressSeries = components["schemas"]["ProgressSeries"];
+export type ProgressMetric = "volume" | "est1rm" | "bodyweight";
 
 export type IntellaClientOptions = {
   baseUrl?: string;
@@ -137,6 +147,67 @@ export function createIntellaClient(options: IntellaClientOptions = {}) {
         })
       );
     },
+
+    // ------------------------------------------------------------- Training
+
+    async listExercises(filters: { equipment?: string; muscle?: string } = {}) {
+      return unwrap<Exercise[]>(
+        await client.GET("/exercises", {
+          params: { query: filters }
+        })
+      );
+    },
+
+    /**
+     * Kick off a generation. Rules → LLM → validator, server-side. Slow enough
+     * over Tailscale to warrant a loading state; the result may be `degraded`,
+     * which the UI surfaces rather than hides.
+     */
+    async generateProgram() {
+      return unwrap<Program>(await client.POST("/training/program:generate", {}));
+    },
+
+    /** Null when no program has been generated yet (404). */
+    async getCurrentProgram() {
+      return unwrapOrNull<Program>(await client.GET("/training/program/current"));
+    },
+
+    /** Null on a rest day or before a program exists (404). */
+    async getTodaySession() {
+      return unwrapOrNull<WorkoutSession>(await client.GET("/training/session/today"));
+    },
+
+    async logSets(
+      sessionId: string,
+      body: { status?: "completed" | "skipped" | "partial"; sets: SetLogInput[] }
+    ) {
+      return unwrap<WorkoutSession>(
+        await client.POST("/training/session/{id}/log", {
+          params: { path: { id: sessionId } },
+          body
+        })
+      );
+    },
+
+    async submitSessionFeedback(sessionId: string, body: FeedbackInput) {
+      return unwrap<Feedback>(
+        await client.POST("/training/session/{id}/feedback", {
+          params: { path: { id: sessionId } },
+          body
+        })
+      );
+    },
+
+    async getProgress(metric: ProgressMetric, exerciseId?: string) {
+      return unwrap<ProgressSeries>(
+        await client.GET("/training/progress", {
+          params: {
+            query: exerciseId ? { metric, exerciseId } : { metric }
+          }
+        })
+      );
+    },
+
     raw: client
   };
 }

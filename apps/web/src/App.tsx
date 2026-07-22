@@ -18,12 +18,15 @@ import {
   Settings,
   ShoppingBasket,
   Sparkles,
+  TrendingUp,
   type LucideIcon
 } from "lucide-react";
 
 import { Button } from "./components/ui/button.js";
 import { OnboardingWizard } from "./onboarding/OnboardingWizard.js";
 import { SettingsScreen } from "./settings/SettingsScreen.js";
+import { ProgressScreen } from "./training/ProgressScreen.js";
+import { WorkoutScreen } from "./training/WorkoutScreen.js";
 import { clearFirstPlanHandoff, isFirstPlanHandoff } from "./lib/first-plan.js";
 import { intellaClient } from "./lib/api.js";
 import { cn } from "./lib/utils.js";
@@ -32,6 +35,7 @@ const navItems = [
   { label: "Today", to: "/", icon: Home },
   { label: "Onboarding", to: "/onboarding", icon: HeartPulse },
   { label: "Workout", to: "/workout", icon: Dumbbell },
+  { label: "Progress", to: "/progress", icon: TrendingUp },
   { label: "Meal Plan", to: "/meal-plan", icon: Apple },
   { label: "Grocery", to: "/grocery", icon: ShoppingBasket },
   { label: "Settings", to: "/settings", icon: Settings }
@@ -167,18 +171,6 @@ function FirstPlanHandoff({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
-function WorkoutScreen() {
-  return (
-    <ScreenFrame title="Workout" eyebrow="Training">
-      <div className="grid gap-3">
-        {["Warm-up", "Main lifts", "Accessories", "Feedback"].map((item) => (
-          <Row key={item} label={item} value="Queued" />
-        ))}
-      </div>
-    </ScreenFrame>
-  );
-}
-
 function MealPlanScreen() {
   return (
     <ScreenFrame title="Meal Plan" eyebrow="Meals">
@@ -278,6 +270,12 @@ const workoutRoute = createRoute({
   component: WorkoutScreen
 });
 
+const progressRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/progress",
+  component: ProgressScreen
+});
+
 const mealPlanRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/meal-plan",
@@ -300,6 +298,7 @@ const routeTree = rootRoute.addChildren([
   todayRoute,
   onboardingRoute,
   workoutRoute,
+  progressRoute,
   mealPlanRoute,
   groceryRoute,
   settingsRoute

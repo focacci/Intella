@@ -27,7 +27,8 @@
     "smoke:seed": "node --import tsx prisma/smoke/seed-smoke.ts",
     "backup:run": "node --import tsx apps/api/src/ops/backup-cli.ts",
     "backup:smoke": "node --import tsx apps/api/src/ops/backup-smoke.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "smoke:training": "node --import tsx apps/api/src/training/smoke.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",
