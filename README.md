@@ -38,7 +38,7 @@ A single **OpenAPI spec is the source of truth** — both the web and iOS client
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | **Backend** | Node + Fastify · Prisma ORM · SQLite · Zod validation · Anthropic SDK                                                          |
 | **Web**     | React + Vite · Tailwind CSS + shadcn/ui · TanStack Query · TanStack Router                                                     |
-| **iOS**     | SwiftUI (added after the web prototype is validated)                                                                           |
+| **iOS**     | SwiftUI — deferred native track (built after the full web track: Phases 0–5 + 7–11)                                                                           |
 | **Hosting** | API on `localhost`, reached privately from iPhone/iPad over Tailscale — HTTPS via Tailscale Serve, auto-started at dev startup |
 
 ```
@@ -163,7 +163,9 @@ pnpm setup:pair                                 # local dev
 
 ## Status
 
-The build is phased:
+The build is **web-first**: everything that runs in the browser ships before any native/iOS code. Phase numbers are stable identifiers; the sequence below is the build order.
+
+**Web track — build now** (no Apple Developer license; usable from the iPhone browser over Tailscale):
 
 - **Phase 0 — Foundations:** ✅ complete — monorepo, Fastify skeleton, Prisma + SQLite schema with committed migrations, OpenAPI scaffold, bearer auth + device pairing, encrypted nightly backups, Tailscale remote access, web shell.
 - **Phase 1 — Profile & onboarding**
@@ -171,7 +173,12 @@ The build is phased:
 - **Phase 3 — Nutrition engine** (Spoonacular + USDA FoodData Central)
 - **Phase 4 — Grocery list**
 - **Phase 5 — Integration & adaptation** (Today dashboard, feedback loop, hardening)
-- **Phase 6 — iOS** (post-prototype)
+- **Phase 7 — Estimation core** → **Phase 8 — Horizon planning** → **Phase 9 — Habit learning** → **Phase 10 — Analytics surfaces** → **Phase 11 — Adaptive hardening** — the adaptive-intelligence engines, surfaced on web dashboards (they depend only on Phases 2–4 logging, not on the native app).
+
+**Native track — deferred** (needs the Apple Developer Program + a Mac + devices on hand):
+
+- **Phase 6 — iOS + offline sync + TestFlight** (SwiftUI app + Watch).
+- **Phases 12–16 — Ambient capture** (HealthKit/CoreMotion sensors, assume-then-ratify, the interruption budget).
 
 Cross-store price optimization, send-to-cart, wearable sync, and photo logging are explicitly deferred to post-v1.
 

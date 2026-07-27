@@ -2,7 +2,7 @@
 
 *Intelligent personal trainer + nutritionist and meal planner. Single-user, self-hosted, adaptive, explainable.*
 
-**Version:** 0.8 (consolidated) · **Date:** July 5, 2026 · **Status:** Pre-code decisions locked (R1–R24). Ready to build Phase 0.
+**Version:** 0.9 (web-first build order) · **Date:** July 5, 2026 (build order revised 2026-07-27) · **Status:** Pre-code decisions locked (R1–R24). **Build sequence is web-first** — see §11. Web track in progress (Phase 2); the native/HealthKit track (Phase 6, then 12–16) is deferred until the web track ships.
 
 > **What this document is.** A single consolidated spine that folds the whole design — the v0.2 foundation, the v0.3 adaptive-intelligence layer, the v0.4 ambient-capture layer, the v0.5 operational-hardening layer, the v0.6 data-residency/deployment layer, and the v0.7 preflight resolutions — into one plan. The five companion docs remain the deep-dive references; this file is the map. The build is split into **17 phases (0–16)**, and each phase has a self-contained, hand-off-ready epic in **`Intella_Epics_and_Stories.md`** — feed one epic to a coding agent and it can build that phase in one shot.
 
@@ -67,10 +67,10 @@ Aggregate every recipe ingredient for the week into consolidated quantities; can
 ### Cross-cutting — Today dashboard & the adaptation loop
 **Today** shows the day's workout, the day's meals, and a grocery nudge in one screen, with a coach-insight banner surfacing what the adaptation loop just changed and why. The **adaptation loop** is the spine: every log, swap, pantry update, and (later) sensor reading re-parameterizes the next generation.
 
-### Layer A — Adaptive intelligence (v0.3 · Phases 7–11)
+### Layer A — Adaptive intelligence (v0.3 · Phases 7–11 · web track — build now)
 A **living profile** in three tiers (declared facts → observed events → estimated parameters like TDEE, e1RM, adherence), continuously re-estimated on a scheduler. **Horizon planning** on one shared goal tree sized to the user's goals. **Habit learning** in three loops (fast/medium/slow). **Position & trajectory analytics** with an honest confidence cone and a plain-language "why it changed" log.
 
-### Layer B — Ambient capture (v0.4 · Phases 12–16)
+### Layer B — Ambient capture (v0.4 · Phases 12–16 · native track — deferred)
 Sensor-first data acquisition on iOS/watchOS: HealthKit + CoreMotion feed the estimators passively. **Assume-then-ratify** — every sensed/inferred datum is written provisionally and drives the plan immediately; a non-blocking one-tap approval confirms or corrects it. A **capture ladder** (silent → ambient → notification → in-app) and a **value-of-information interruption budget** spend the user's attention as the scarce resource it is.
 
 ### Layer C — Operational resilience & residency (v0.5–v0.6 · woven throughout)
@@ -116,9 +116,9 @@ Every generator — training, meals, grocery, and each horizon node — follows 
 
 ## 6. Information architecture (screens)
 
-**Web (Phases 0–5):** Onboarding · Today · Workout · Meal Plan · Grocery List · Settings.
+**Web — build now (Phases 0–5, then the adaptive-intelligence phases 7–11):** Onboarding · Today · Workout · Meal Plan · Grocery List · Settings, then the **Insights** surfaces (Position / Trajectory / Horizon). All render in the browser and need no native code — this is the full web-first track.
 
-**Native (Phase 6+):** the six above adapted for iPhone/iPad/Watch, plus the layers' surfaces:
+**Native — deferred (Phase 6, then 12–16):** the web screens above adapted for iPhone/iPad/Watch, plus the **Approvals & Capture** queue and the **iOS primitives** (Live Activity, home/lock widgets, Watch complication). None of these are built until the web track ships:
 
 | Screen / surface | Purpose |
 |---|---|
@@ -290,6 +290,13 @@ intella/
 
 Each phase maps to exactly one self-contained epic in `Intella_Epics_and_Stories.md`.
 
+> **Build order is now web-first (v0.9).** Phase numbers below are **stable identifiers**, but the *build sequence* is:
+>
+> - **Web track — build now** (no Apple Developer license; testable from the iPhone browser over Tailscale): **0 → 1 → 2 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11**. Phases 7–11 are the adaptive-intelligence engines surfaced on **web** dashboards; they depend only on Phases 2–4 logging, not on the native app.
+> - **Native track — deferred** (needs the Apple Developer Program + a Mac + devices on hand): **6**, then **12 → 13 → 14 → 15 → 16** — the SwiftUI/Watch app, offline sync, and all HealthKit/sensor capture.
+>
+> The table below stays in numeric order as a per-phase reference; follow the sequence above when deciding what to build next.
+
 | Phase | Name | Delivers | Depends on |
 |---|---|---|---|
 | **0** | Foundations | Monorepo, Fastify skeleton, full schema (R1–R9 + `ChangeLog` + `IngredientAlias`), OpenAPI + client gen, web shell, seed data, backups, migration discipline, per-device tokens, `/system/status`, Docker setup + pairing, Tailscale Serve | — |
@@ -314,7 +321,7 @@ Each phase maps to exactly one self-contained epic in `Intella_Epics_and_Stories
 
 ## 12. Consolidated ticket index
 
-Tickets are the atomic hand-off units; every one carries acceptance criteria (in the epics doc). Build in phase order; tickets within a phase parallelize where noted.
+Tickets are the atomic hand-off units; every one carries acceptance criteria (in the epics doc). **Build in the web-first sequence from §11** (0–5, then 7–11; the native track — 6 and 12–16 — is deferred); tickets within a phase parallelize where noted.
 
 **Phase 0 — Foundations:** T0.1 Monorepo & tooling · T0.2 API skeleton + healthcheck · T0.3 Database & schema (R1–R9 + `ChangeLog` + `IngredientAlias`) · T0.4 OpenAPI scaffold + client gen · T0.5 Web shell · T0.6 Remote access (Tailscale) · T0.7 Backup & restore (OS-agnostic, R21) · T0.8 Migration discipline (expand/contract) · T0.9 Per-device tokens · T0.10 `GET /system/status` degraded-mode surface · T0.11 Sync metadata + `serverSeq`/`ChangeLog` · T0.12 Dockerized deployment + first-run setup + pairing (PIN, R22) · T0.13 Tailscale Serve HTTPS.
 

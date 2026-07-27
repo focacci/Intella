@@ -1,6 +1,6 @@
 # Intella — Epics & Stories (Build Hand-off)
 
-**Version:** 0.8 · **Date:** July 5, 2026 · **Status:** Ready to build. One epic per phase (0–16).
+**Version:** 0.9 (web-first build order) · **Date:** July 5, 2026 (build order revised 2026-07-27) · **Status:** Web track in progress. One epic per phase (0–16); the **build sequence is now web-first** — see *Revised build order* in the Global Build Context.
 
 *Companion to `Intella_Product_and_Build_Plan.md` (the consolidated spine). This document is the build hand-off: **17 phase-scoped epics**, each a self-contained brief a coding agent can build in one shot.*
 
@@ -29,7 +29,7 @@ Each epic corresponds to exactly one build phase and is **self-contained**: it s
 **Stack.**
 - *Backend:* TypeScript · Fastify · Prisma 7 (URL in `prisma.config.ts`) · SQLite (WAL) · Zod validation · Anthropic SDK behind an LLM gateway.
 - *Web:* React + Vite · Tailwind + shadcn/ui · TanStack Query + Router · API client generated from OpenAPI.
-- *iOS (Phase 6+):* SwiftUI · GRDB local store · Swift client generated from the same OpenAPI spec · Watch app for in-workout logging.
+- *iOS (deferred — native track; see "Revised build order" below):* SwiftUI · GRDB local store · Swift client generated from the same OpenAPI spec · Watch app for in-workout logging. **Not built until the entire web track (Phases 0–5 and 7–11) ships.**
 
 **Repo (pnpm monorepo).**
 ```
@@ -66,9 +66,16 @@ intella/
 
 **Coding conventions.** TypeScript strict. **OpenAPI-first** — define the route in `openapi.yaml`, regenerate the client, then implement. Zod schemas mirror the OpenAPI request/response shapes. **Prisma Migrate** with committed migration files, never `db push` on real data; expand/contract for non-additive changes; a pre-migrate backup hook. Pure engine logic is unit-tested exhaustively (that's where safety lives); LLM output is checked by property assertions, not exact matches.
 
+**Revised build order (web-first — supersedes strict numeric phase order).** Phase *numbers* stay stable identifiers (ticket ids, R-pointers, cross-references), but the **build sequence is web-first**: ship everything that runs in the browser before writing any native code. HealthKit and every other iOS/watchOS feature are deferred until the web track is complete.
+
+- **Web track — build now** *(no Apple Developer license required; the web UI is reached from the iPhone's **browser** over Tailscale, so it is fully testable away from home with no cable):* Phase 0 → 1 → 2 → 3 → 4 → 5, then **Phase 7 → 8 → 9 → 10 → 11**. The adaptive-intelligence phases (7–11) are server-side engines surfaced on web dashboards (Position / Trajectory / Horizon); they depend only on Phases 2–4 logging — **not** on the Phase 6 native app — so they slot in immediately after Phase 5.
+- **Native track — deferred** *(needs the paid Apple Developer Program + a Mac with Xcode + your devices on hand):* **Phase 6** (SwiftUI/Watch app, offline sync, TestFlight), then **Phase 12 → 13 → 14 → 15 → 16** (HealthKit/CoreMotion ambient capture). Build **none** of these until the web track above is done.
+
+The native track waits on exactly the things the web track doesn't need (a developer license, a Mac, physical devices) — which is the point of building web-first.
+
 ---
 
-# Phase 0–5 — The web prototype
+# Web track (build now) · Phases 0–5 — The web prototype
 
 ---
 
@@ -462,7 +469,9 @@ SafetyFlag{ kind, detectedFrom, severity, message, acknowledgedAt?, createdAt } 
 
 ---
 
-# Phase 6 — Native app, offline, and distribution
+# Native track (deferred) · Phase 6 — Native app, offline, and distribution
+
+> **Deferred under the web-first build order.** Do **not** build this phase until the entire web track — Phases 0–5 **and** 7–11 — is done. It needs the paid **Apple Developer Program**, a **Mac** with Xcode, and your devices on hand: exactly what building web-first is meant to avoid needing up front. Until then Intella is used from the iPhone's **browser** over Tailscale. (The server-side sync endpoints in this phase are only useful once a second, offline client — the native app — exists, so they defer along with it.)
 
 ---
 
@@ -522,9 +531,9 @@ Retention: current period + ~8–12 weeks; recipe images/`mediaUrl` in a size-ca
 
 ---
 
-# Phase 7–11 — Adaptive intelligence
+# Web track (build now) · Phases 7–11 — Adaptive intelligence (web dashboards)
 
-*These phases assume the web prototype (0–5) is logging real data — the estimators need Tier-2 history to fit against. Design tenet throughout: **reality overrides the formula.***
+*Build these **right after Phase 5, before any native work.** They are server-side engines surfaced on **web** screens (Position / Trajectory / Horizon) and depend only on Phases 2–4 logging — **not** on the Phase 6 native app — so they belong to the web track. They assume the web prototype (0–5) is logging real data — the estimators need Tier-2 history to fit against. Design tenet throughout: **reality overrides the formula.***
 
 ---
 
@@ -745,7 +754,9 @@ TrajectorySnapshot{ goalId, takenAt, projectedSeries[](json), confidence }   // 
 
 ---
 
-# Phase 12–16 — Ambient capture
+# Native track (deferred) · Phases 12–16 — Ambient capture (HealthKit)
+
+> **Deferred under the web-first build order — this is the HealthKit / sensor block.** Build only after Phase 6 (which itself waits on the whole web track). Everything here rides on iOS/watchOS sensors (HealthKit, CoreMotion, the Watch), so none of it can be exercised from the web and all of it is parked until the native track begins.
 
 *iOS/watchOS-native by necessity (the sensors live on the devices), so these depend on the Phase 6 app and sit on top of the Phase 7 estimators (there must be an estimator to feed). Design tenets: **sense first, ask last · assume then ratify · every question is a one-tap correction of a pre-filled guess · sensors override self-report · confidence is the throttle.** Grounded in iOS 26 reality: no food or screen-usage sensing; rich passive biometrics; one-tap notification/widget logging.*
 
